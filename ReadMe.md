@@ -2,7 +2,7 @@
 
 一个使用Ingame overlay方式实现的Osu游戏内铺面下载器。
 
-铺面镜像使用Sayobot，感谢Sayobot提供如此优质的服务。
+铺面镜像使用[Sayobot]( https://osu.sayobot.cn/)，感谢Sayobot提供如此优质的服务。
 
 ## 说明
 
@@ -10,7 +10,7 @@
 
 但由于需要注入DLL到Osu!中并修改Osu!的Render以及劫持某些API，如果用户使用后因本插件被Ban，作者不承担任何责任。
 
-PS: 使用OsuSync的IngameOverlay不会被ban， https://osu.ppy.sh/community/forums/topics/697214?n=78
+PS：作为参考，使用OsuSync的IngameOverlay不会被ban， https://osu.ppy.sh/community/forums/topics/697214?n=78
 
 ## 方法
 

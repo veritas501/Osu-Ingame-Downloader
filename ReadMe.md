@@ -4,7 +4,7 @@
 
 铺面镜像使用[Sayobot]( https://osu.sayobot.cn/)，感谢Sayobot提供如此优质的服务。
 
-## 说明
+## 使用说明
 
 本下载器的实现方式和steam中`shift+tab`的overlay以及OsuSync中的[IngameOverlay](https://github.com/OsuSync/IngameOverlay) 是一样的。
 
@@ -12,7 +12,11 @@
 
 PS：作为参考，使用OsuSync的IngameOverlay不会被ban， https://osu.ppy.sh/community/forums/topics/697214?n=78
 
-## 方法
+## DLL下载
+
+ https://github.com/veritas501/Osu-Ingame-Downloader/releases 
+
+## 食用方法
 
 1. DLL的加载有三种方法，选择一种适合你的：
    1. 将`version.dll`复制到Osu!游戏文件夹下（不一定起效，游戏启动后按`Alt+M`测试是否成功）

@@ -118,7 +118,7 @@ int DL::ParseInfo(string url, UINT64& sid, string& songName) {
 	}
 	status = jContent["status"].GetInt();
 	if (status) {
-		logger::WriteLogFormat("[-] ParseSid: Sayobot err-code: %s", status);
+		logger::WriteLogFormat("[-] ParseSid: Sayobot err-code: %d", status);
 		return 3;
 	}
 	if (!jContent.HasMember("data")) {

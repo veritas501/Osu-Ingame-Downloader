@@ -91,5 +91,8 @@
     <ClCompile Include="deps\imgui\imgui_widgets.cpp">
       <Filter>Deps\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="deps\gl3w\GL\gl3w.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

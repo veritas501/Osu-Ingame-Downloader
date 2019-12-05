@@ -100,7 +100,7 @@ CURLcode DL::CurlDownload(const string url, const string fileName, MyProgress* p
 }
 
 int DL::ParseInfo(string url, UINT64& sid, string& songName) {
-	logger::WriteLogFormat("start parse %s", url.c_str());
+	logger::WriteLogFormat("[*] parsing %s", url.c_str());
 	string parseApiUrl = "https://api.sayobot.cn/v2/beatmapinfo?0=" + url;
 	string content;
 	Document jContent;
@@ -135,7 +135,7 @@ int DL::ParseInfo(string url, UINT64& sid, string& songName) {
 }
 
 int DL::StartDownload(string fileName, UINT64 sid, string taskKey) {
-	logger::WriteLogFormat("start download sid %llu", sid);
+	logger::WriteLogFormat("[*] downloading sid %llu", sid);
 	string downloadApiUrl;
 	switch (DL::inst()->downloadType) {
 	case FULL:

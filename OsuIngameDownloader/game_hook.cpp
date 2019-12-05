@@ -80,7 +80,6 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	auto tasks = &dlInst->tasks;
 	// already in process, skip
 	dlInst->SetTaskReadLock();
-	logger::WriteLogFormat("start thread: %s", url);
 	if (tasks->count(url) > 0) {
 		DL::inst()->UnsetTaskLock();
 		logger::WriteLogFormat("[*] Reject duplicated request: %s", url);

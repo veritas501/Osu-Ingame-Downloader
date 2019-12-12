@@ -76,6 +76,7 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	UINT64 sid = 0;
 	string songName = "";
 	string fileName = "";
+	int category = 0;
 	DL* dlInst = DL::inst();
 	auto tasks = &dlInst->tasks;
 	// already in process, skip
@@ -91,8 +92,8 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	tasks->operator[](url).dlStatus = PARSE;
 	tasks->operator[](url).songName = url;
 	dlInst->UnsetTaskLock();
-	// parse sid
-	res = dlInst->ParseInfo(url, sid, songName);
+	// parse sid, song name and category
+	res = dlInst->ParseInfo(url, sid, songName, category);
 	if (res) {
 		CallOriShellExecuteExW(url);
 		goto finish;
@@ -107,6 +108,7 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	tasks->operator[](url).dlStatus = DOWNLOAD;
 	tasks->operator[](url).songName = songName;
 	tasks->operator[](url).sid = sid;
+	tasks->operator[](url).category = (SayobotCategory)category;
 	dlInst->UnsetTaskLock();
 	// download map
 	GetTempPathA(MAX_PATH, tmpPath);

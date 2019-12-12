@@ -4,7 +4,7 @@
 #include "downloader.h"
 #include "map_db.h"
 
-#define VERSION "Version: Beta 0.4.1"
+#define VERSION "Version: Beta 0.5"
 
 LRESULT CALLBACK DetourWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	if (OV::inst()->isShowingSettings()) {
@@ -166,6 +166,32 @@ void OV::RenderOverlay(HDC hdc) {
 					ImGui::Text("  Status: Downloading %c", "|/-\\"[(int)(ImGui::GetTime() / 0.1f) & 3]);
 					ImGui::Text("MapsetID: %llu", keyIter->second.sid);
 					ImGui::Text("SongName: %s", keyIter->second.songName.c_str());
+					switch (keyIter->second.category) {
+					case GRAVEYARD:
+						ImGui::Text("Category: Graveyard");
+						break;
+					case WIP:
+						ImGui::Text("Category: WIP");
+						break;
+					case PENDING:
+						ImGui::Text("Category: Pending");
+						break;
+					case RANKED:
+						ImGui::Text("Category: Ranked");
+						break;
+					case APPROVED:
+						ImGui::Text("Category: Approved");
+						break;
+					case QUALIFIED:
+						ImGui::Text("Category: Qualified");
+						break;
+					case LOVED:
+						ImGui::Text("Category: Loved");
+						break;
+					default:
+						ImGui::Text("Category: Unkown");
+						break;
+					}
 					ImGui::Text("FileSize: %.2fMB / %.2fMB", keyIter->second.fileSize / 0x100000, keyIter->second.downloaded / 0x100000);
 					ImGui::ProgressBar(keyIter->second.percent, ImVec2(-1, 5));
 					break;
@@ -199,7 +225,7 @@ void OV::RenderOverlay(HDC hdc) {
 
 		ImGui::Text("OSZ Version: ");
 		ImGui::SameLine();
-		ImGui::Combo("", &DL::inst()->downloadType, DlTyteName, IM_ARRAYSIZE(DlTyteName));
+		ImGui::Combo("", &DL::inst()->downloadType, DlTypeName, IM_ARRAYSIZE(DlTypeName));
 		ImGui::SameLine();
 		HelpMarker("Help:\n1. <Full Version> is full version.\n2. <No Video> doesn't contain video.\n3. <Mini> doesn't contain video and keysound.");
 		ImGui::End();

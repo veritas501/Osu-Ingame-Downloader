@@ -17,10 +17,23 @@ enum DlStatus {
 	DOWNLOAD
 };
 
+enum SayobotCategory {
+	UNKNOWN = -3,
+	GRAVEYARD = -2,
+	WIP = -1,
+	PENDING = 0,
+	RANKED = 1,
+	APPROVED = 2,
+	QUALIFIED = 3,
+	LOVED = 4
+};
+
+
 struct DlInfo {
 	DlStatus dlStatus = NONE;
 	UINT64 sid = 0;
 	string songName = "";
+	SayobotCategory category = UNKNOWN;
 	double fileSize = 0;
 	double downloaded = 0;
 	float percent = 0;
@@ -30,7 +43,7 @@ struct MyProgress {
 	string taskKey = "";
 };
 
-extern const char* DlTyteName[3];
+extern const char* DlTypeName[3];
 
 class DL {
 private:
@@ -44,7 +57,7 @@ public:
 	DL();
 	~DL();
 	static DL* inst();
-	int ParseInfo(string url, UINT64& sid, string& songName);
+	int ParseInfo(string url, UINT64& sid, string& songName, int& approved);
 	int StartDownload(string fileName, UINT64 sid, string taskKey);
 	int RemoveTaskInfo(string url);
 	void SetTaskReadLock();

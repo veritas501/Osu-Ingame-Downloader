@@ -6,7 +6,7 @@
 #include "logger.h"
 using namespace rapidjson;
 
-const char* DlTyteName[3] = { "Full Version", "No Video", "Mini" };
+const char* DlTypeName[3] = { "Full Version", "No Video", "Mini" };
 
 size_t stringWriter(char* data, size_t size, size_t nmemb, std::string* writerData) {
 	if (writerData == NULL)
@@ -99,7 +99,7 @@ CURLcode DL::CurlDownload(const string url, const string fileName, MyProgress* p
 	return res;
 }
 
-int DL::ParseInfo(string url, UINT64& sid, string& songName) {
+int DL::ParseInfo(string url, UINT64& sid, string& songName, int& category) {
 	logger::WriteLogFormat("[*] parsing %s", url.c_str());
 	string parseApiUrl = "https://api.sayobot.cn/v2/beatmapinfo?0=" + url;
 	string content;
@@ -125,12 +125,13 @@ int DL::ParseInfo(string url, UINT64& sid, string& songName) {
 		logger::WriteLogFormat("[-] ParseSid: Wrong json format: doesn't contain member 'data'");
 		return 4;
 	}
-	if (!jContent["data"].HasMember("sid") || !jContent["data"].HasMember("title")) {
-		logger::WriteLogFormat("[-] ParseSid: Wrong json format: doesn't contain member 'sid' or 'title'");
+	if (!jContent["data"].HasMember("sid") || !jContent["data"].HasMember("title") || !jContent["data"].HasMember("approved")) {
+		logger::WriteLogFormat("[-] ParseSid: Wrong json format: doesn't contain member 'sid' or 'title' or 'approved'");
 		return 5;
 	}
 	sid = jContent["data"]["sid"].GetUint64();
 	songName = jContent["data"]["title"].GetString();
+	category = jContent["data"]["approved"].GetInt();
 	return 0;
 }
 

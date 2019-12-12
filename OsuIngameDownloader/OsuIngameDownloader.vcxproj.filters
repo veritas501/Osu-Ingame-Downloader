@@ -15,6 +15,9 @@
     <Filter Include="Deps\imgui">
       <UniqueIdentifier>{296d677c-c176-4b64-90de-3ffff2194f90}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Deps\gl3w">
+      <UniqueIdentifier>{cfb4c909-5bb1-4fcf-99e8-e3078eb4fcfa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="logger.h">
@@ -92,7 +95,7 @@
       <Filter>Deps\imgui</Filter>
     </ClCompile>
     <ClCompile Include="deps\gl3w\GL\gl3w.c">
-      <Filter>Sources</Filter>
+      <Filter>Deps\gl3w</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

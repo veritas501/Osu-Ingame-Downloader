@@ -4,7 +4,7 @@
 #include "downloader.h"
 #include "map_db.h"
 
-#define VERSION "Version: Beta 0.5"
+#define VERSION "Version: Beta 0.6"
 
 LRESULT CALLBACK DetourWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	if (OV::inst()->isShowingSettings()) {
@@ -32,24 +32,23 @@ void OV::InitOverlay(HDC hdc) {
 		PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    // Flags
 		PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
 		32,                   // Colordepth of the framebuffer.
-		0, 0, 0, 0, 0, 0,
-		0,
-		0,
-		0,
-		0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,     // color bits ignored
+		0,                    // no alpha buffer
+		0,                    // shift bit ignored
+		0,                    // no accumulation buff
+		0, 0, 0, 0,           // accum bits ignored
 		24,                   // Number of bits for the depthbuffer
 		8,                    // Number of bits for the stencilbuffer
 		0,                    // Number of Aux buffers in the framebuffer.
-		PFD_MAIN_PLANE,
-		0,
-		0, 0, 0
+		PFD_MAIN_PLANE,       // Main layer
+		0,                    // reserved
+		0, 0, 0               // layer masks ignored
 	};
 	int pixelFormat = ChoosePixelFormat(hdc, &pfd);
 	SetPixelFormat(hdc, pixelFormat, &pfd);
 	HGLRC glContext = wglCreateContext(hdc);
 	gl3wInit();
-	// 如果取消注释则原始图像将不显示
-	//wglMakeCurrent(hdc, glContext);
+
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
 	ImGuiIO& io = ImGui::GetIO();
@@ -148,7 +147,7 @@ void OV::RenderOverlay(HDC hdc) {
 		if (!statusPinned) {
 			statusWindowFlag &= ~ImGuiWindowFlags_NoMove;
 		}
-		ImGui::Begin(STATUS_WINDOW_NAME, nullptr, ImVec2(0, 0), 0.6f, statusWindowFlag);
+		ImGui::Begin(STATUS_WINDOW_NAME, nullptr, ImVec2(0, 0), 0.8f, statusWindowFlag);
 		DL::inst()->SetTaskReadLock();
 		auto tasks = &DL::inst()->tasks;
 		auto keyIter = tasks->begin();
@@ -234,7 +233,6 @@ void OV::RenderOverlay(HDC hdc) {
 	//===================== MY UI END =====================
 	ImGui::Render();
 	ImGuiIO& io = ImGui::GetIO();
-	glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 

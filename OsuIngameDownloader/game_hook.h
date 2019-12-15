@@ -22,7 +22,7 @@ namespace HK {
 	extern _ShellExcuteExW BakShellExecuteExW;
 	extern HHOOK msgHook;
 	extern HWND hwnd;
-	
+
 	int InitHook();
 	int ReHookSwapBuffers();
 	int UninitHook();

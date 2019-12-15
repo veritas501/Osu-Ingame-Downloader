@@ -45,7 +45,7 @@ void OV::InitOverlay(HDC hdc) {
 	style->ScrollbarRounding = 5.0f;
 	style->FrameBorderSize = 1.0f;
 	style->ItemSpacing.y = 6.5f;
-	style->Colors[ImGuiCol_TextDisabled] = {0.79f, 0.79f, 0.79f, 1.00f};
+	style->Colors[ImGuiCol_TextDisabled] = { 0.79f, 0.79f, 0.79f, 1.00f };
 	style->Colors[ImGuiCol_WindowBg] = { 0.23f, 0.24f, 0.25f, 0.94f };
 	style->Colors[ImGuiCol_ChildBg] = { 0.23f, 0.24f, 0.25f, 0.00f };
 	style->Colors[ImGuiCol_PopupBg] = { 0.23f, 0.24f, 0.25f, 0.94f };
@@ -214,7 +214,7 @@ void OV::RenderOverlay(HDC hdc) {
 		HelpMarker("Help:\nBid and Sid can be found in urls\n1. osu.ppy.sh/b/{Bid}\n2. osu.ppy.sh/s/{Sid}\n3. osu.ppy.sh/beatmapsets/{Sid}#osu/{Bid}");
 		ImGui::RadioButton("Sid", &DL::manualDlType, 0); ImGui::SameLine();
 		ImGui::RadioButton("Bid", &DL::manualDlType, 1);
-		ImGui::InputTextWithHint("##input_song_id","song id", DL::manualDlId, IM_ARRAYSIZE(DL::manualDlId)); ImGui::SameLine();
+		ImGui::InputTextWithHint("##input_song_id", "song id", DL::manualDlId, IM_ARRAYSIZE(DL::manualDlId)); ImGui::SameLine();
 		if (ImGui::Button("Download")) {
 			DL::ManualDownload(DL::manualDlId, DL::manualDlType);
 		}

@@ -15,7 +15,7 @@ namespace OV {
 	extern bool showStatus;
 	extern bool showSetting;
 	extern int statusPinned;
-	
+
 	void HelpMarker(const char* desc);
 	bool isShowingSettings();
 	void ReverseShowSettings();

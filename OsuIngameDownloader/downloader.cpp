@@ -17,15 +17,14 @@ char DL::manualDlId[0x10] = "";
 
 // writer used by curl CURLOPT_WRITEFUNCTION
 size_t stringWriter(char* data, size_t size, size_t nmemb, std::string* writerData) {
-	if (writerData == NULL)
+	if (writerData == NULL) {
 		return 0;
-
+	}
 	writerData->append(data, size * nmemb);
 	return size * nmemb;
 }
 
-size_t fileWriter(void* ptr, size_t size, size_t nmemb, void* stream)
-{
+size_t fileWriter(void* ptr, size_t size, size_t nmemb, void* stream) {
 	size_t written = fwrite(ptr, size, nmemb, (FILE*)stream);
 	return written;
 }

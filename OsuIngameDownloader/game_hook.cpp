@@ -141,6 +141,7 @@ BOOL __stdcall DetourShellExecuteExW(LPSHELLEXECUTEINFOW pExecinfo) {
 	}
 	findPos1 = wstring(pExecinfo->lpFile).find(L"osu.ppy.sh/b/");
 	findPos2 = wstring(pExecinfo->lpFile).find(L"osu.ppy.sh/s/");
+	findPos2 = wstring(pExecinfo->lpFile).find(L"osu.ppy.sh/beatmapsets/");
 	if ((findPos1 == -1) && (findPos2 == -1)) {
 		goto call_api; // not the target
 	}

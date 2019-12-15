@@ -57,6 +57,7 @@ namespace DL {
 	CURLcode CurlDownload(const string url, const string fileName, MyProgress* prog);
 	int ParseInfo(string url, UINT64& sid, string& songName, int& approved);
 	int StartDownload(string fileName, UINT64 sid, string taskKey);
+	int ManualDownload(string id, int idType);
 	int RemoveTaskInfo(string url);
 	void SetTaskReadLock();
 	void SetTaskWriteLock();

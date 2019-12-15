@@ -5,6 +5,7 @@
 #include "ingame_overlay.h"
 #include "downloader.h"
 #include "map_db.h"
+#include "utils.h"
 using namespace std;
 
 UINT HK::raw_devices_count = -1;
@@ -41,24 +42,6 @@ BOOL __stdcall InitPlugin(HDC hdc) {
 BOOL __stdcall DetourSwapBuffers(HDC hdc) {
 	OV::RenderOverlay(hdc);
 	return HK::OriSwapBuffers(hdc);
-}
-
-char* wchar2char(LPCWSTR wc) {
-	char* c;
-	int size;
-	size = WideCharToMultiByte(CP_ACP, 0, wc, -1, NULL, 0, NULL, NULL);
-	c = new char[size];
-	WideCharToMultiByte(CP_ACP, 0, wc, -1, c, size, NULL, NULL);
-	return c;
-}
-
-LPCWSTR char2wchar(const char* c)
-{
-	const size_t cSize = strlen(c) + 1;
-	wchar_t* wc = new wchar_t[cSize];
-	size_t res;
-	mbstowcs_s(&res, wc, cSize, c, cSize);
-	return wc;
 }
 
 BOOL CallOriShellExecuteExW(const char* lpFile) {
@@ -125,8 +108,7 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 		goto finish;
 	}
 	// open map
-	//ShellExecuteA(0, NULL, fileName.c_str(), NULL, NULL, SW_HIDE);
-	MessageBoxA(0,"asd","",0);
+	ShellExecuteA(0, NULL, fileName.c_str(), NULL, NULL, SW_HIDE);
 	// insert map into database
 	DB::insertSid(sid);
 finish:
@@ -166,14 +148,6 @@ BOOL __stdcall DetourShellExecuteExW(LPSHELLEXECUTEINFOW pExecinfo) {
 	return true;
 call_api:
 	return HK::OriShellExecuteExW(pExecinfo);
-}
-
-int HK::ManualDownload(string id, int idType) {
-	string url = idType == 0? "https://osu.ppy.sh/s/" + id: "https://osu.ppy.sh/b/" + id;
-	LPCWSTR w_url = char2wchar(url.c_str());
-	ShellExecute(0, 0, w_url, 0, 0, SW_HIDE);
-	delete w_url;
-	return 0;
 }
 
 LRESULT CALLBACK GetMsgProc(int nCode, WPARAM wParam, LPARAM lParam) {

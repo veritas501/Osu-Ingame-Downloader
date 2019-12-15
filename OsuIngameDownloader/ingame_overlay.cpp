@@ -216,7 +216,7 @@ void OV::RenderOverlay(HDC hdc) {
 		ImGui::RadioButton("Bid", &DL::manualDlType, 1);
 		ImGui::InputTextWithHint("##input_song_id","song id", DL::manualDlId, IM_ARRAYSIZE(DL::manualDlId)); ImGui::SameLine();
 		if (ImGui::Button("Download")) {
-			HK::ManualDownload(DL::manualDlId, DL::manualDlType);
+			DL::ManualDownload(DL::manualDlId, DL::manualDlType);
 		}
 		ImGui::Separator();
 		ImGui::Text("> Sayobot Mirror Settings: ");

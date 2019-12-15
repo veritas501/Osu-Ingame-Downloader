@@ -4,6 +4,7 @@
 #include <time.h>
 #include "Downloader.h"
 #include "logger.h"
+#include "utils.h"
 using namespace rapidjson;
 
 const char* DL::DlTypeName[3] = { "Full Version", "No Video", "Mini" };
@@ -161,6 +162,14 @@ int DL::StartDownload(string fileName, UINT64 sid, string taskKey) {
 		return 2;
 	}
 	delete myp;
+	return 0;
+}
+
+int DL::ManualDownload(string id, int idType) {
+	string url = idType == 0 ? "https://osu.ppy.sh/s/" + id : "https://osu.ppy.sh/b/" + id;
+	LPCWSTR w_url = char2wchar(url.c_str());
+	ShellExecute(0, 0, w_url, 0, 0, SW_HIDE);
+	delete w_url;
 	return 0;
 }
 

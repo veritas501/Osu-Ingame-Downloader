@@ -29,5 +29,4 @@ namespace HK {
 	int BackupRawInputDevices();
 	int DisablRawInputDevices();
 	int RestoreRawInputDevices();
-	int ManualDownload(string id, int idType);
 };

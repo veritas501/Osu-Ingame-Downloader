@@ -11,13 +11,8 @@
 using namespace std;
 using namespace rapidjson;
 
-CH* CH::inst() {
-	static CH _ch;
-	return &_ch;
-}
-
 // load config from file
-int CH::LoadConfig() {
+int Config::LoadConfig() {
 	ifstream ifs("Ingame.cfg");
 	string result;
 	Document d;
@@ -30,17 +25,17 @@ int CH::LoadConfig() {
 	d.Parse(result.c_str());
 	// save download type(full, no video, mini)
 	if (d.HasMember("downloadType")) {
-		DL::inst()->downloadType = d["downloadType"].GetInt();
+		DL::downloadType = d["downloadType"].GetInt();
 	}
 	// save flag dontUseDownloader
 	if (d.HasMember("dontUseDownloader")) {
-		DL::inst()->dontUseDownloader = d["dontUseDownloader"].GetBool();
+		DL::dontUseDownloader = d["dontUseDownloader"].GetBool();
 	}
 	return 0;
 }
 
 // save config to file
-int CH::SaveConfig() {
+int Config::SaveConfig() {
 	ofstream ofs("Ingame.cfg");
 	StringBuffer sb;
 	Writer<StringBuffer> writer(sb);
@@ -51,9 +46,9 @@ int CH::SaveConfig() {
 	}
 	writer.StartObject();
 	writer.Key("downloadType");
-	writer.Int(DL::inst()->downloadType);
+	writer.Int(DL::downloadType);
 	writer.Key("dontUseDownloader");
-	writer.Bool(DL::inst()->dontUseDownloader);
+	writer.Bool(DL::dontUseDownloader);
 	writer.EndObject();
 	result = sb.GetString();
 	ofs << result << endl;

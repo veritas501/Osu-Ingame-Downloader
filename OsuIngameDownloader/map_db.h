@@ -5,19 +5,17 @@
 #include "rw_lock.h"
 using namespace std;
 
-class DB {
-public:
-	DB();
-	~DB();
-	static DB* inst();
-	void InitDataBase(string songDir);
-	bool sidExist(UINT64 sid);
-	void insertSid(UINT64 sid);
-private:
-	vector<UINT64> sids;
-	LK lock;
+namespace DB {
+	extern vector<UINT64> sidDatabase;
+	extern LK databaseLock;
+
 	void topDirSearch(string path);
 	void findSingleMap(string path);
 	int ParseMapSid(string fileName);
 	string GetSuffix(string fileName);
+
+	void InitDataBase(string songDir);
+	bool sidExist(UINT64 sid);
+	void insertSid(UINT64 sid);
+
 };

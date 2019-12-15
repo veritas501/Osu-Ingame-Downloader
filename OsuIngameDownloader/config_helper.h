@@ -1,10 +1,6 @@
 #pragma once
-// config helper class
-class CH {
-public:
-	CH() {}
-	~CH() {}
-	static CH* inst();
+
+namespace Config {
 	int LoadConfig();
 	int SaveConfig();
-};
+}

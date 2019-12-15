@@ -12,21 +12,17 @@ BOOL __stdcall DetourSwapBuffers(HDC hdc);
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 DWORD WINAPI MsgHookThread(LPVOID lpParam);
 
-// hook class
-class HK {
-private:
-	UINT raw_devices_count = -1;
-	RAWINPUTDEVICE* raw_devices = NULL;
-public:
-	_SwapBuffers OriSwapBuffers = nullptr;
-	_SwapBuffers BakOriSwapBuffers = nullptr;
-	_ShellExcuteExW OriShellExecuteExW = nullptr;
-	_ShellExcuteExW BakShellExecuteExW = nullptr;
-	HHOOK msgHook = nullptr;
-	HWND hwnd = NULL;
-	HK() {}
-	~HK() {}
-	static HK* inst();
+// short for hook
+namespace HK {
+	extern UINT raw_devices_count;
+	extern RAWINPUTDEVICE* raw_devices;
+	extern _SwapBuffers OriSwapBuffers;
+	extern _SwapBuffers BakOriSwapBuffers;
+	extern _ShellExcuteExW OriShellExecuteExW;
+	extern _ShellExcuteExW BakShellExecuteExW;
+	extern HHOOK msgHook;
+	extern HWND hwnd;
+	
 	int InitHook();
 	int ReHookSwapBuffers();
 	int UninitHook();

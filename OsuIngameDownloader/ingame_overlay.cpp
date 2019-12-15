@@ -4,12 +4,11 @@
 #include "downloader.h"
 #include "map_db.h"
 
-#define VERSION "Version: Beta 0.7"
+#define VERSION "Version: Beta 0.7.2"
 
-OV* OV::inst() {
-	static OV _ov;
-	return &_ov;
-}
+bool OV::showStatus = false;
+bool OV::showSetting = false;
+int OV::statusPinned = 1;
 
 void OV::InitOverlay(HDC hdc) {
 	PIXELFORMATDESCRIPTOR pfd =
@@ -94,13 +93,13 @@ bool OV::isShowingSettings() {
 void OV::ReverseShowSettings() {
 	showSetting = !showSetting;
 	if (showSetting) {
-		HK::inst()->DisablRawInputDevices();
+		HK::DisablRawInputDevices();
 		ImGuiIO& io = ImGui::GetIO();
 		io.MouseDrawCursor = true;
 		statusPinned = 0;
 	}
 	else {
-		HK::inst()->RestoreRawInputDevices();
+		HK::RestoreRawInputDevices();
 		ImGuiIO& io = ImGui::GetIO();
 		io.MouseDrawCursor = false;
 		statusPinned = 1;
@@ -135,14 +134,13 @@ void OV::RenderOverlay(HDC hdc) {
 			statusWindowFlag &= ~ImGuiWindowFlags_NoMove;
 		}
 		ImGui::Begin(STATUS_WINDOW_NAME, nullptr, ImVec2(0, 0), 0.8f, statusWindowFlag);
-		DL::inst()->SetTaskReadLock();
-		auto tasks = &DL::inst()->tasks;
-		auto keyIter = tasks->begin();
-		if (keyIter == tasks->end()) {
+		DL::SetTaskReadLock();
+		auto keyIter = DL::tasks.begin();
+		if (keyIter == DL::tasks.end()) {
 			ImGui::Text("  Status: Idle");
 		}
 		else {
-			while (keyIter != tasks->end()) {
+			while (keyIter != DL::tasks.end()) {
 				switch (keyIter->second.dlStatus) {
 				case PARSE:
 					ImGui::Text("  Status: Parsing %c", "|/-\\"[(int)(ImGui::GetTime() / 0.1f) & 3]);
@@ -187,13 +185,13 @@ void OV::RenderOverlay(HDC hdc) {
 				}
 
 				keyIter++;
-				if (keyIter != tasks->end()) {
+				if (keyIter != DL::tasks.end()) {
 					ImGui::Separator();
 				}
 			}
 		}
 		ImGui::End();
-		DL::inst()->UnsetTaskLock();
+		DL::UnsetTaskLock();
 	}
 
 	if (showSetting) {
@@ -209,7 +207,7 @@ void OV::RenderOverlay(HDC hdc) {
 		ImGui::Text("3. Status window will auto show when download");
 		ImGui::Text("   started, and will auto hide when finished.");
 		ImGui::Separator();
-		ImGui::Checkbox("Stop using ingame downloader", &DL::inst()->dontUseDownloader);
+		ImGui::Checkbox("Stop using ingame downloader", &DL::dontUseDownloader);
 		ImGui::Separator();
 		ImGui::Text("> Manual download: ");
 		ImGui::SameLine();
@@ -220,14 +218,14 @@ void OV::RenderOverlay(HDC hdc) {
 		ImGui::RadioButton("Bid", &manualDlType, 1);
 		ImGui::InputTextWithHint("##input_song_id","song id", manualDlId, IM_ARRAYSIZE(manualDlId)); ImGui::SameLine();
 		if (ImGui::Button("Download")) {
-			HK::inst()->ManualDownload(manualDlId, manualDlType);
+			HK::ManualDownload(manualDlId, manualDlType);
 		}
 		ImGui::Separator();
 		
 		ImGui::Text("> Sayobot Mirror Settings: ");
 		ImGui::Text("OSZ Version: ");
 		ImGui::SameLine();
-		ImGui::Combo("", &DL::inst()->downloadType, DlTypeName, IM_ARRAYSIZE(DlTypeName));
+		ImGui::Combo("", &DL::downloadType, DL::DlTypeName, IM_ARRAYSIZE(DL::DlTypeName));
 		ImGui::SameLine();
 		HelpMarker("Help:\n1. <Full Version> is full version.\n2. <No Video> doesn't contain video.\n3. <Mini> doesn't contain video and keysound.");
 

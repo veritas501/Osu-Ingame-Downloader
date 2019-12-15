@@ -6,7 +6,11 @@
 #include "logger.h"
 using namespace rapidjson;
 
-const char* DlTypeName[3] = { "Full Version", "No Video", "Mini" };
+const char* DL::DlTypeName[3] = { "Full Version", "No Video", "Mini" };
+LK DL::taskLock;
+bool DL::dontUseDownloader = false;
+int DL::downloadType = NOVIDEO;
+map<string, DlInfo> DL::tasks;
 
 // writer used by curl CURLOPT_WRITEFUNCTION
 size_t stringWriter(char* data, size_t size, size_t nmemb, std::string* writerData) {
@@ -27,32 +31,19 @@ size_t fileWriter(void* ptr, size_t size, size_t nmemb, void* stream)
 // write out real time information to struct
 int xferinfoCB(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
 	MyProgress* myp = (struct MyProgress*)clientp;
-	DL::inst()->SetTaskReadLock();
-	auto tasks = &DL::inst()->tasks;
-	if (tasks->count(myp->taskKey) < 0) {
-		DL::inst()->UnsetTaskLock();
+	DL::SetTaskReadLock();
+	if (DL::tasks.count(myp->taskKey) < 0) {
+		DL::UnsetTaskLock();
 		return 1;
 	}
-	DL::inst()->UnsetTaskLock();
-	DL::inst()->SetTaskWriteLock();
-	tasks->operator[](myp->taskKey).fileSize = (double)dltotal;
-	tasks->operator[](myp->taskKey).downloaded = (double)dlnow;
-	tasks->operator[](myp->taskKey).percent = (float)((double)dlnow / (double)dltotal);
-	DL::inst()->UnsetTaskLock();
+	DL::UnsetTaskLock();
+	DL::SetTaskWriteLock();
+	DL::tasks[myp->taskKey].fileSize = (double)dltotal;
+	DL::tasks[myp->taskKey].downloaded = (double)dlnow;
+	DL::tasks[myp->taskKey].percent = (float)((double)dlnow / (double)dltotal);
+	DL::UnsetTaskLock();
 	return 0;
 }
-
-DL::DL() {
-	curl_global_init(CURL_GLOBAL_ALL);
-}
-
-DL::~DL() { }
-
-DL* DL::inst() {
-	static DL Downloader;
-	return &Downloader;
-}
-
 
 // GET requests, return string
 CURLcode DL::CurlGetReq(const string url, string& response) {
@@ -145,7 +136,7 @@ int DL::ParseInfo(string url, UINT64& sid, string& songName, int& category) {
 int DL::StartDownload(string fileName, UINT64 sid, string taskKey) {
 	logger::WriteLogFormat("[*] downloading sid %llu", sid);
 	string downloadApiUrl;
-	switch (DL::inst()->downloadType) {
+	switch (DL::downloadType) {
 	case FULL:
 		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/full/" + to_string(sid) + "?server=0";
 		break;

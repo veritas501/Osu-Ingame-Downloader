@@ -212,23 +212,19 @@ void OV::RenderOverlay(HDC hdc) {
 		ImGui::Text("> Manual download: ");
 		ImGui::SameLine();
 		HelpMarker("Help:\nBid and Sid can be found in urls\n1. osu.ppy.sh/b/{Bid}\n2. osu.ppy.sh/s/{Sid}\n3. osu.ppy.sh/beatmapsets/{Sid}#osu/{Bid}");
-		static int manualDlType = 0;
-		static char manualDlId[15] = "";
-		ImGui::RadioButton("Sid", &manualDlType, 0); ImGui::SameLine();
-		ImGui::RadioButton("Bid", &manualDlType, 1);
-		ImGui::InputTextWithHint("##input_song_id","song id", manualDlId, IM_ARRAYSIZE(manualDlId)); ImGui::SameLine();
+		ImGui::RadioButton("Sid", &DL::manualDlType, 0); ImGui::SameLine();
+		ImGui::RadioButton("Bid", &DL::manualDlType, 1);
+		ImGui::InputTextWithHint("##input_song_id","song id", DL::manualDlId, IM_ARRAYSIZE(DL::manualDlId)); ImGui::SameLine();
 		if (ImGui::Button("Download")) {
-			HK::ManualDownload(manualDlId, manualDlType);
+			HK::ManualDownload(DL::manualDlId, DL::manualDlType);
 		}
 		ImGui::Separator();
-		
 		ImGui::Text("> Sayobot Mirror Settings: ");
 		ImGui::Text("OSZ Version: ");
 		ImGui::SameLine();
 		ImGui::Combo("", &DL::downloadType, DL::DlTypeName, IM_ARRAYSIZE(DL::DlTypeName));
 		ImGui::SameLine();
 		HelpMarker("Help:\n1. <Full Version> is full version.\n2. <No Video> doesn't contain video.\n3. <Mini> doesn't contain video and keysound.");
-
 		ImGui::End();
 	}
 

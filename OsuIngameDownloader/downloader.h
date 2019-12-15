@@ -50,6 +50,8 @@ namespace DL {
 	extern bool dontUseDownloader;
 	extern int downloadType;
 	extern map<string, DlInfo> tasks;
+	extern int manualDlType;
+	extern char manualDlId[0x10];
 
 	CURLcode CurlGetReq(const string url, string& response);
 	CURLcode CurlDownload(const string url, const string fileName, MyProgress* prog);

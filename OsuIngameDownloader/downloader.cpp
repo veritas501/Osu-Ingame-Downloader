@@ -11,6 +11,8 @@ LK DL::taskLock;
 bool DL::dontUseDownloader = false;
 int DL::downloadType = NOVIDEO;
 map<string, DlInfo> DL::tasks;
+int DL::manualDlType = 0;
+char DL::manualDlId[0x10] = "";
 
 // writer used by curl CURLOPT_WRITEFUNCTION
 size_t stringWriter(char* data, size_t size, size_t nmemb, std::string* writerData) {

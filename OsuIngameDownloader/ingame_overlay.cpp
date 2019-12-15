@@ -6,19 +6,6 @@
 
 #define VERSION "Version: Beta 0.6"
 
-LRESULT CALLBACK DetourWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	if (OV::inst()->isShowingSettings()) {
-		if (ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam)) {
-			return 1;
-		}
-		// if showing setting now, don't transfer mouse event to osu
-		if ((uMsg >= WM_MOUSEFIRST && uMsg <= WM_MOUSELAST) || (uMsg == WM_NCHITTEST)) {
-			return 1;
-		}
-	}
-	return CallWindowProc(HK::inst()->wndProc, hWnd, uMsg, wParam, lParam);
-}
-
 OV* OV::inst() {
 	static OV _ov;
 	return &_ov;
@@ -32,17 +19,17 @@ void OV::InitOverlay(HDC hdc) {
 		PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    // Flags
 		PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
 		32,                   // Colordepth of the framebuffer.
-		0, 0, 0, 0, 0, 0,     // color bits ignored
-		0,                    // no alpha buffer
-		0,                    // shift bit ignored
-		0,                    // no accumulation buff
-		0, 0, 0, 0,           // accum bits ignored
+		0, 0, 0, 0, 0, 0,     // Color bits ignored
+		0,                    // No alpha buffer
+		0,                    // Shift bit ignored
+		0,                    // No accumulation buff
+		0, 0, 0, 0,           // Accum bits ignored
 		24,                   // Number of bits for the depthbuffer
 		8,                    // Number of bits for the stencilbuffer
 		0,                    // Number of Aux buffers in the framebuffer.
 		PFD_MAIN_PLANE,       // Main layer
-		0,                    // reserved
-		0, 0, 0               // layer masks ignored
+		0,                    // Reserved
+		0, 0, 0               // Layer masks ignored
 	};
 	int pixelFormat = ChoosePixelFormat(hdc, &pfd);
 	SetPixelFormat(hdc, pixelFormat, &pfd);
@@ -227,6 +214,8 @@ void OV::RenderOverlay(HDC hdc) {
 		ImGui::Combo("", &DL::inst()->downloadType, DlTypeName, IM_ARRAYSIZE(DlTypeName));
 		ImGui::SameLine();
 		HelpMarker("Help:\n1. <Full Version> is full version.\n2. <No Video> doesn't contain video.\n3. <Mini> doesn't contain video and keysound.");
+		static char str0[128] = "Hello, world!";
+		ImGui::InputText("input text", str0, IM_ARRAYSIZE(str0));
 		ImGui::End();
 	}
 

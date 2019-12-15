@@ -8,12 +8,10 @@
 using namespace std;
 
 BOOL __stdcall InitPlugin(HDC hdc) {
-	// hook msg for ingame overlay(can't get keyboard msg here)
+	// hook msg for ingame overlay
 	HK::inst()->hwnd = WindowFromDC(hdc);
-	HK::inst()->wndProc = (WNDPROC)SetWindowLongPtr(HK::inst()->hwnd, GWLP_WNDPROC, (LONG)DetourWndProc);
-	// hook keyboard msg
 	DWORD tid = GetCurrentThreadId();
-	CreateThread(NULL, NULL, HookKeyboardThread, &tid, 0, NULL);
+	CreateThread(NULL, NULL, MsgHookThread, &tid, 0, NULL);
 	// init overlay
 	OV::inst()->InitOverlay(hdc);
 	// init sid database;
@@ -65,7 +63,6 @@ BOOL CallOriShellExecuteExW(char* lpFile) {
 	delete pExecinfo->lpFile;
 	delete pExecinfo;
 	return res;
-
 }
 
 // thread that perform download
@@ -162,30 +159,52 @@ call_api:
 	return HK::inst()->OriShellExecuteExW(pExecinfo);
 }
 
-LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
-	if (nCode == HC_ACTION)
-	{
+LRESULT CALLBACK GetMsgProc(int nCode, WPARAM wParam, LPARAM lParam) {
+	if (nCode != HC_ACTION)	{
+		return CallNextHookEx(HK::inst()->msgHook, nCode, wParam, lParam);
+	}
+	MSG* msg = (MSG*)lParam;
+	if (WM_KEYFIRST <= msg->message && msg->message <= WM_KEYLAST) {
+		logger::WriteLogFormat("wP: %p, msg: %p, hwnd: %p, char: %c, lp: %p", wParam,msg->message, msg->hwnd, msg->wParam, msg->lParam);
+	}
+	//The message has been removed from the queue.
+	if (wParam == PM_REMOVE) {
 		// hotkey Alt+M press
-		if (!(lParam >> 31 & 1) && (lParam >> 29 & 1) && (wParam == 'M')) {
-			OV::inst()->ReverseShowSettings();
+		if (msg->message == WM_SYSKEYDOWN) {
+			int contextCode = msg->lParam >> 29 & 1;
+			int transitionState = msg->lParam >> 31 & 1;
+			if (!transitionState && contextCode && (msg->wParam == 'M')) {
+				OV::inst()->ReverseShowSettings();
+			}
 		}
-		// if showing setting now, disable all keyboard input,
 		if (OV::inst()->isShowingSettings()) {
+			ImGui_ImplWin32_WndProcHandler(msg->hwnd, msg->message, msg->wParam, msg->lParam);
+		}
+	}
+	// Block keyboard and mouse message to osu while setting is showing.
+	if (OV::inst()->isShowingSettings()) {
+		if (msg->message == WM_CHAR) {
+			msg->message = WM_NULL;
+			return 1;
+		}
+		if ((WM_MOUSEFIRST <= msg->message && msg->message <= WM_MOUSELAST) || (msg->message == WM_NCHITTEST) || (msg->message == WM_SETCURSOR)) {
+			msg->message = WM_NULL;
 			return 1;
 		}
 	}
-	return CallNextHookEx(HK::inst()->keyHook, nCode, wParam, lParam);
+
+	return CallNextHookEx(HK::inst()->msgHook, nCode, wParam, lParam);
 }
 
-DWORD WINAPI HookKeyboardThread(LPVOID lpParam) {
+DWORD WINAPI MsgHookThread(LPVOID lpParam) {
 	DWORD Tid = *(DWORD*)lpParam;
-	HK::inst()->keyHook = SetWindowsHookEx(WH_KEYBOARD, KeyboardProc, GetModuleHandle(NULL), Tid);
-	if (!HK::inst()->keyHook) {
-		logger::WriteLog("[-] Set keyboard hook failed");
+	HK::inst()->msgHook = SetWindowsHookEx(WH_GETMESSAGE, GetMsgProc, GetModuleHandle(NULL), Tid);
+	if (!HK::inst()->msgHook) {
+		logger::WriteLog("[-] Set message hook failed");
 		return 1;
 	}
 	else {
-		logger::WriteLog("[+] Set keyboard hook success");
+		logger::WriteLog("[+] Set message hook success");
 		MSG msg;
 		while (GetMessage(&msg, NULL, 0, 0))
 		{
@@ -196,6 +215,7 @@ DWORD WINAPI HookKeyboardThread(LPVOID lpParam) {
 	return 0;
 }
 
+// backup/disable/restore rawinput
 int HK::BackupRawInputDevices() {
 	raw_devices_count = -1;
 	GetRegisteredRawInputDevices(NULL, &raw_devices_count, sizeof(RAWINPUTDEVICE));
@@ -270,24 +290,6 @@ HK* HK::inst() {
 	return &_hk;
 }
 
-int HK::InitHook()
-{
-	if (MH_Initialize() != MH_OK) {
-		logger::WriteLog("[-] MinHook£ºInitialize fail");
-		return 1;
-	}
-	if (MH_CreateHookApiEx(L"gdi32", "SwapBuffers", InitPlugin, (LPVOID*)&OriSwapBuffers, (LPVOID*)&BakOriSwapBuffers) != MH_OK) {
-		logger::WriteLog("[-] MinHook£ºCan't hook gdi32.SwapBuffers");
-		return 1;
-	}
-	if (MH_EnableHook(BakOriSwapBuffers) != MH_OK) {
-		logger::WriteLog("[-] MinHook£ºEnable hook fail");
-		return 1;
-	}
-	logger::WriteLog("[+] Install hook success");
-	return 0;
-}
-
 int HK::ReHookSwapBuffers() {
 	if (MH_RemoveHook(BakOriSwapBuffers) != MH_OK) {
 		logger::WriteLog("[-] ReHook£ºRemove old hook fail");
@@ -309,9 +311,26 @@ int HK::ReHookSwapBuffers() {
 	return 0;
 }
 
+int HK::InitHook() {
+	if (MH_Initialize() != MH_OK) {
+		logger::WriteLog("[-] MinHook£ºInitialize fail");
+		return 1;
+	}
+	if (MH_CreateHookApiEx(L"gdi32", "SwapBuffers", InitPlugin, (LPVOID*)&OriSwapBuffers, (LPVOID*)&BakOriSwapBuffers) != MH_OK) {
+		logger::WriteLog("[-] MinHook£ºCan't hook gdi32.SwapBuffers");
+		return 1;
+	}
+	if (MH_EnableHook(BakOriSwapBuffers) != MH_OK) {
+		logger::WriteLog("[-] MinHook£ºEnable hook fail");
+		return 1;
+	}
+	logger::WriteLog("[+] Install hook success");
+	return 0;
+}
+
 int HK::UninitHook() {
-	if (HK::inst()->keyHook) {
-		UnhookWindowsHookEx(HK::inst()->keyHook);
+	if (HK::inst()->msgHook) {
+		UnhookWindowsHookEx(HK::inst()->msgHook);
 	}
 	if (MH_Uninitialize() != MH_OK) {
 		logger::WriteLog("[-] MinHook uninitialize fail");

@@ -10,7 +10,7 @@ BOOL __stdcall InitPlugin(HDC hdc);
 BOOL __stdcall DetourSwapBuffers(HDC hdc);
 
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
-DWORD WINAPI HookKeyboardThread(LPVOID lpParam);
+DWORD WINAPI MsgHookThread(LPVOID lpParam);
 
 // hook class
 class HK {
@@ -22,8 +22,7 @@ public:
 	_SwapBuffers BakOriSwapBuffers = nullptr;
 	_ShellExcuteExW OriShellExecuteExW = nullptr;
 	_ShellExcuteExW BakShellExecuteExW = nullptr;
-	HHOOK keyHook = nullptr;
-	WNDPROC wndProc = nullptr;
+	HHOOK msgHook = nullptr;
 	HWND hwnd = NULL;
 	HK() {}
 	~HK() {}

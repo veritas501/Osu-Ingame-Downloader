@@ -8,6 +8,7 @@ using namespace rapidjson;
 
 const char* DlTypeName[3] = { "Full Version", "No Video", "Mini" };
 
+// writer used by curl CURLOPT_WRITEFUNCTION
 size_t stringWriter(char* data, size_t size, size_t nmemb, std::string* writerData) {
 	if (writerData == NULL)
 		return 0;
@@ -23,6 +24,7 @@ size_t fileWriter(void* ptr, size_t size, size_t nmemb, void* stream)
 }
 
 // xferinfo callback function
+// write out real time information to struct
 int xferinfoCB(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
 	MyProgress* myp = (struct MyProgress*)clientp;
 	DL::inst()->SetTaskReadLock();
@@ -51,6 +53,8 @@ DL* DL::inst() {
 	return &Downloader;
 }
 
+
+// GET requests, return string
 CURLcode DL::CurlGetReq(const string url, string& response) {
 	CURL* curl = curl_easy_init();
 	CURLcode res = CURL_LAST;
@@ -71,6 +75,7 @@ CURLcode DL::CurlGetReq(const string url, string& response) {
 	return res;
 }
 
+// GET requests, write output to file
 CURLcode DL::CurlDownload(const string url, const string fileName, MyProgress* prog) {
 	CURL* curl = curl_easy_init();
 	CURLcode res = CURL_LAST;
@@ -99,6 +104,7 @@ CURLcode DL::CurlDownload(const string url, const string fileName, MyProgress* p
 	return res;
 }
 
+// use sayobot api to parse sid,song name,category by osu beatmap url
 int DL::ParseInfo(string url, UINT64& sid, string& songName, int& category) {
 	logger::WriteLogFormat("[*] parsing %s", url.c_str());
 	string parseApiUrl = "https://api.sayobot.cn/v2/beatmapinfo?0=" + url;
@@ -135,6 +141,7 @@ int DL::ParseInfo(string url, UINT64& sid, string& songName, int& category) {
 	return 0;
 }
 
+// download beatmap from sayobot server to file by using sid
 int DL::StartDownload(string fileName, UINT64 sid, string taskKey) {
 	logger::WriteLogFormat("[*] downloading sid %llu", sid);
 	string downloadApiUrl;

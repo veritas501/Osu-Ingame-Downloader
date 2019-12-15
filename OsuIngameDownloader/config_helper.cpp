@@ -16,6 +16,7 @@ CH* CH::inst() {
 	return &_ch;
 }
 
+// load config from file
 int CH::LoadConfig() {
 	ifstream ifs("Ingame.cfg");
 	string result;
@@ -27,15 +28,18 @@ int CH::LoadConfig() {
 	ifs >> result;
 	ifs.close();
 	d.Parse(result.c_str());
+	// save download type(full, no video, mini)
 	if (d.HasMember("downloadType")) {
 		DL::inst()->downloadType = d["downloadType"].GetInt();
 	}
+	// save flag dontUseDownloader
 	if (d.HasMember("dontUseDownloader")) {
 		DL::inst()->dontUseDownloader = d["dontUseDownloader"].GetBool();
 	}
 	return 0;
 }
 
+// save config to file
 int CH::SaveConfig() {
 	ofstream ofs("Ingame.cfg");
 	StringBuffer sb;

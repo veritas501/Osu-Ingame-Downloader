@@ -2,6 +2,7 @@
 #include "logger.h"
 #include "config_helper.h"
 
+// DLL hijack header
 #ifdef _VERSIONHIJACK
 #include "version_hijack.h"
 #endif
@@ -23,6 +24,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 	case DLL_PROCESS_DETACH:
 		CH::inst()->SaveConfig();
 		HK::inst()->UninitHook();
+		logger::WriteLog("===================== See you next time ======================");
 		break;
 	}
 	return TRUE;

@@ -5,51 +5,43 @@
 #include "ingame_overlay.h"
 #include "downloader.h"
 #include "map_db.h"
+#include "utils.h"
 using namespace std;
+
+UINT HK::raw_devices_count = -1;
+RAWINPUTDEVICE* HK::raw_devices = NULL;
+_SwapBuffers HK::OriSwapBuffers = nullptr;
+_SwapBuffers HK::BakOriSwapBuffers = nullptr;
+_ShellExcuteExW HK::OriShellExecuteExW = nullptr;
+_ShellExcuteExW HK::BakShellExecuteExW = nullptr;
+HHOOK HK::msgHook = nullptr;
+HWND HK::hwnd = NULL;
 
 BOOL __stdcall InitPlugin(HDC hdc) {
 	// hook msg for ingame overlay
-	HK::inst()->hwnd = WindowFromDC(hdc);
+	HK::hwnd = WindowFromDC(hdc);
 	DWORD tid = GetCurrentThreadId();
 	CreateThread(NULL, NULL, MsgHookThread, &tid, 0, NULL);
 	// init overlay
-	OV::inst()->InitOverlay(hdc);
+	OV::InitOverlay(hdc);
 	// init sid database;
 	HANDLE hThread = reinterpret_cast<HANDLE>(_beginthreadex(0, 0,
 		[](void* pData) -> unsigned int {
-			DB::inst()->InitDataBase("Songs");
+			DB::InitDataBase("Songs");
 			return 0;
 		}, NULL, 0, NULL));
 	if (hThread) {
 		CloseHandle(hThread);
 	}
 	// rehook swapbuffer
-	HK::inst()->ReHookSwapBuffers();
+	HK::ReHookSwapBuffers();
 	logger::WriteLog("[+] Init Plugin Done");
-	return HK::inst()->OriSwapBuffers(hdc);
+	return HK::OriSwapBuffers(hdc);
 }
 
 BOOL __stdcall DetourSwapBuffers(HDC hdc) {
-	OV::inst()->RenderOverlay(hdc);
-	return HK::inst()->OriSwapBuffers(hdc);
-}
-
-char* wchar2char(LPCWSTR wc) {
-	char* c;
-	int size;
-	size = WideCharToMultiByte(CP_ACP, 0, wc, -1, NULL, 0, NULL, NULL);
-	c = new char[size];
-	WideCharToMultiByte(CP_ACP, 0, wc, -1, c, size, NULL, NULL);
-	return c;
-}
-
-LPCWSTR char2wchar(const char* c)
-{
-	const size_t cSize = strlen(c) + 1;
-	wchar_t* wc = new wchar_t[cSize];
-	size_t res;
-	mbstowcs_s(&res, wc, cSize, c, cSize);
-	return wc;
+	OV::RenderOverlay(hdc);
+	return HK::OriSwapBuffers(hdc);
 }
 
 BOOL CallOriShellExecuteExW(const char* lpFile) {
@@ -59,7 +51,7 @@ BOOL CallOriShellExecuteExW(const char* lpFile) {
 	pExecinfo->lpFile = char2wchar(lpFile);
 	pExecinfo->nShow = SW_SHOWNORMAL;
 	pExecinfo->fMask = SEE_MASK_FLAG_NO_UI | SEE_MASK_NOASYNC | SEE_MASK_NOCLOSEPROCESS; // same with osu
-	auto res = HK::inst()->OriShellExecuteExW(pExecinfo);
+	auto res = HK::OriShellExecuteExW(pExecinfo);
 	delete pExecinfo->lpFile;
 	delete pExecinfo;
 	return res;
@@ -74,45 +66,43 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	string songName = "";
 	string fileName = "";
 	int category = 0;
-	DL* dlInst = DL::inst();
-	auto tasks = &dlInst->tasks;
 	// already in process, skip
-	dlInst->SetTaskReadLock();
-	if (tasks->count(url) > 0) {
-		DL::inst()->UnsetTaskLock();
+	DL::SetTaskReadLock();
+	if (DL::tasks.count(url) > 0) {
+		DL::UnsetTaskLock();
 		logger::WriteLogFormat("[*] Reject duplicated request: %s", url);
 		return 0;
 	}
-	dlInst->UnsetTaskLock();
-	OV::inst()->ShowStatus();
-	dlInst->SetTaskWriteLock();
-	tasks->operator[](url).dlStatus = PARSE;
-	tasks->operator[](url).songName = url;
-	dlInst->UnsetTaskLock();
+	DL::UnsetTaskLock();
+	OV::ShowStatus();
+	DL::SetTaskWriteLock();
+	DL::tasks[url].dlStatus = PARSE;
+	DL::tasks[url].songName = url;
+	DL::UnsetTaskLock();
 	// parse sid, song name and category
-	res = dlInst->ParseInfo(url, sid, songName, category);
+	res = DL::SayobotParseInfo(url, sid, songName, category);
 	if (res) {
 		CallOriShellExecuteExW(url);
 		goto finish;
 	}
 	// user already has this map
-	if (DB::inst()->sidExist(sid)) {
+	if (DB::sidExist(sid)) {
 		logger::WriteLogFormat("[*] user already has sid %llu, skip", sid);
 		CallOriShellExecuteExW(url);
 		goto finish;
 	}
-	dlInst->SetTaskWriteLock();
-	tasks->operator[](url).dlStatus = DOWNLOAD;
-	tasks->operator[](url).songName = songName;
-	tasks->operator[](url).sid = sid;
-	tasks->operator[](url).category = (SayobotCategory)category;
-	dlInst->UnsetTaskLock();
+	DL::SetTaskWriteLock();
+	DL::tasks[url].dlStatus = DOWNLOAD;
+	DL::tasks[url].songName = songName;
+	DL::tasks[url].sid = sid;
+	DL::tasks[url].category = (SayobotCategory)category;
+	DL::UnsetTaskLock();
 	// download map
 	GetTempPathA(MAX_PATH, tmpPath);
 	fileName.append(tmpPath);
 	fileName.append(to_string(sid));
 	fileName.append(".osz");
-	res = dlInst->StartDownload(fileName, sid, url);
+	res = DL::SayobotDownload(fileName, sid, url);
 	if (res) {
 		CallOriShellExecuteExW(url);
 		goto finish;
@@ -120,14 +110,14 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	// open map
 	ShellExecuteA(0, NULL, fileName.c_str(), NULL, NULL, SW_HIDE);
 	// insert map into database
-	DB::inst()->insertSid(sid);
+	DB::insertSid(sid);
 finish:
-	dlInst->RemoveTaskInfo(url);
-	dlInst->SetTaskReadLock();
-	if (tasks->empty()) {
-		OV::inst()->HideStatus();
+	DL::RemoveTaskInfo(url);
+	DL::SetTaskReadLock();
+	if (DL::tasks.empty()) {
+		OV::HideStatus();
 	}
-	dlInst->UnsetTaskLock();
+	DL::UnsetTaskLock();
 	delete url;
 	return 0;
 }
@@ -136,7 +126,7 @@ BOOL __stdcall DetourShellExecuteExW(LPSHELLEXECUTEINFOW pExecinfo) {
 	int findPos1, findPos2, findPos3;
 	char* lpFile;
 	HANDLE hThread;
-	if (DL::inst()->dontUseDownloader) {
+	if (DL::dontUseDownloader) {
 		goto call_api;
 	}
 	findPos1 = wstring(pExecinfo->lpFile).find(L"osu.ppy.sh/b/");
@@ -157,20 +147,12 @@ BOOL __stdcall DetourShellExecuteExW(LPSHELLEXECUTEINFOW pExecinfo) {
 
 	return true;
 call_api:
-	return HK::inst()->OriShellExecuteExW(pExecinfo);
-}
-
-int HK::ManualDownload(string id, int idType) {
-	string url = idType == 0? "https://osu.ppy.sh/s/" + id: "https://osu.ppy.sh/b/" + id;
-	LPCWSTR w_url = char2wchar(url.c_str());
-	ShellExecute(0, 0, w_url, 0, 0, SW_HIDE);
-	delete w_url;
-	return 0;
+	return HK::OriShellExecuteExW(pExecinfo);
 }
 
 LRESULT CALLBACK GetMsgProc(int nCode, WPARAM wParam, LPARAM lParam) {
 	if (nCode != HC_ACTION)	{
-		return CallNextHookEx(HK::inst()->msgHook, nCode, wParam, lParam);
+		return CallNextHookEx(HK::msgHook, nCode, wParam, lParam);
 	}
 	MSG* msg = (MSG*)lParam;
 	//The message has been removed from the queue.
@@ -180,15 +162,15 @@ LRESULT CALLBACK GetMsgProc(int nCode, WPARAM wParam, LPARAM lParam) {
 			int contextCode = msg->lParam >> 29 & 1;
 			int transitionState = msg->lParam >> 31 & 1;
 			if (!transitionState && contextCode && (msg->wParam == 'M')) {
-				OV::inst()->ReverseShowSettings();
+				OV::ReverseShowSettings();
 			}
 		}
-		if (OV::inst()->isShowingSettings()) {
+		if (OV::isShowingSettings()) {
 			ImGui_ImplWin32_WndProcHandler(msg->hwnd, msg->message, msg->wParam, msg->lParam);
 		}
 	}
 	// Block keyboard and mouse message to osu while setting is showing.
-	if (OV::inst()->isShowingSettings()) {
+	if (OV::isShowingSettings()) {
 		if (msg->message == WM_CHAR) {
 			msg->message = WM_NULL;
 			return 1;
@@ -198,13 +180,13 @@ LRESULT CALLBACK GetMsgProc(int nCode, WPARAM wParam, LPARAM lParam) {
 			return 1;
 		}
 	}
-	return CallNextHookEx(HK::inst()->msgHook, nCode, wParam, lParam);
+	return CallNextHookEx(HK::msgHook, nCode, wParam, lParam);
 }
 
 DWORD WINAPI MsgHookThread(LPVOID lpParam) {
 	DWORD Tid = *(DWORD*)lpParam;
-	HK::inst()->msgHook = SetWindowsHookEx(WH_GETMESSAGE, GetMsgProc, GetModuleHandle(NULL), Tid);
-	if (!HK::inst()->msgHook) {
+	HK::msgHook = SetWindowsHookEx(WH_GETMESSAGE, GetMsgProc, GetModuleHandle(NULL), Tid);
+	if (!HK::msgHook) {
 		logger::WriteLog("[-] Set message hook failed");
 		return 1;
 	}
@@ -229,6 +211,9 @@ int HK::BackupRawInputDevices() {
 		return 1;
 	}
 	logger::WriteLogFormat("[*] Find %d raw input", raw_devices_count);
+	if (!raw_devices_count) {
+		return 0;
+	}
 	if (raw_devices) {
 		delete raw_devices;
 	}
@@ -244,6 +229,9 @@ int HK::DisablRawInputDevices() {
 	BackupRawInputDevices();
 	if (raw_devices_count == -1) {
 		return 1;
+	}
+	if (!raw_devices_count) {
+		return 0;
 	}
 	logger::WriteLogFormat("[*] Try to disable %d raw input devices", raw_devices_count);
 	for (UINT i = 0; i < raw_devices_count; i++) {
@@ -273,9 +261,12 @@ int HK::RestoreRawInputDevices() {
 	if (raw_devices_count == -1) {
 		return 1;
 	}
+	if (!raw_devices_count) {
+		return 0;
+	}
 	logger::WriteLogFormat("[*] Try to enable %d raw input devices", raw_devices_count);
-	if (RegisterRawInputDevices(raw_devices, 3, sizeof(RAWINPUTDEVICE)) == FALSE) {
-		logger::WriteLogFormat("[-] Restore %d raw input device fail");
+	if (RegisterRawInputDevices(raw_devices, raw_devices_count, sizeof(RAWINPUTDEVICE)) == FALSE) {
+		logger::WriteLogFormat("[-] Restore %d raw input device fail",raw_devices_count);
 	}
 	UINT now_count = -1;
 	GetRegisteredRawInputDevices(NULL, &now_count, sizeof(RAWINPUTDEVICE));
@@ -288,11 +279,6 @@ int HK::RestoreRawInputDevices() {
 		return 3;
 	}
 	return 0;
-}
-
-HK* HK::inst() {
-	static HK _hk;
-	return &_hk;
 }
 
 int HK::ReHookSwapBuffers() {
@@ -334,8 +320,8 @@ int HK::InitHook() {
 }
 
 int HK::UninitHook() {
-	if (HK::inst()->msgHook) {
-		UnhookWindowsHookEx(HK::inst()->msgHook);
+	if (HK::msgHook) {
+		UnhookWindowsHookEx(HK::msgHook);
 	}
 	if (MH_Uninitialize() != MH_OK) {
 		logger::WriteLog("[-] MinHook uninitialize fail");

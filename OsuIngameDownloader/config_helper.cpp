@@ -11,13 +11,8 @@
 using namespace std;
 using namespace rapidjson;
 
-CH* CH::inst() {
-	static CH _ch;
-	return &_ch;
-}
-
 // load config from file
-int CH::LoadConfig() {
+int Config::LoadConfig() {
 	ifstream ifs("Ingame.cfg");
 	string result;
 	Document d;
@@ -28,19 +23,19 @@ int CH::LoadConfig() {
 	ifs >> result;
 	ifs.close();
 	d.Parse(result.c_str());
-	// save download type(full, no video, mini)
-	if (d.HasMember("downloadType")) {
-		DL::inst()->downloadType = d["downloadType"].GetInt();
+	// save Sayobot download type(full, no video, mini)
+	if (d.HasMember("sayobotDownloadType")) {
+		DL::sayobotDownloadType = d["sayobotDownloadType"].GetInt();
 	}
 	// save flag dontUseDownloader
 	if (d.HasMember("dontUseDownloader")) {
-		DL::inst()->dontUseDownloader = d["dontUseDownloader"].GetBool();
+		DL::dontUseDownloader = d["dontUseDownloader"].GetBool();
 	}
 	return 0;
 }
 
 // save config to file
-int CH::SaveConfig() {
+int Config::SaveConfig() {
 	ofstream ofs("Ingame.cfg");
 	StringBuffer sb;
 	Writer<StringBuffer> writer(sb);
@@ -50,10 +45,10 @@ int CH::SaveConfig() {
 		return 1;
 	}
 	writer.StartObject();
-	writer.Key("downloadType");
-	writer.Int(DL::inst()->downloadType);
+	writer.Key("sayobotDownloadType");
+	writer.Int(DL::sayobotDownloadType);
 	writer.Key("dontUseDownloader");
-	writer.Bool(DL::inst()->dontUseDownloader);
+	writer.Bool(DL::dontUseDownloader);
 	writer.EndObject();
 	result = sb.GetString();
 	ofs << result << endl;

@@ -50,6 +50,9 @@
     <ClInclude Include="xinput_hijack.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="utils.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -96,6 +99,9 @@
     </ClCompile>
     <ClCompile Include="deps\gl3w\GL\gl3w.c">
       <Filter>Deps\gl3w</Filter>
+    </ClCompile>
+    <ClCompile Include="utils.cpp">
+      <Filter>Sources</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

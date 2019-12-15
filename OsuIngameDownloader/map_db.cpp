@@ -6,13 +6,9 @@
 #include <ctime>
 #include <io.h>
 
-DB::DB() {}
-DB::~DB() {}
+vector<UINT64> DB::sidDatabase;
+LK DB::databaseLock;
 
-DB* DB::inst() {
-	static DB _db;
-	return &_db;
-}
 
 string DB::GetSuffix(string fileName) {
 	auto off = fileName.find_last_of('.');
@@ -39,7 +35,7 @@ int DB::ParseMapSid(string fileName) {
 	string sidString = content.substr(off + 13, off2 - (off + 13));
 	UINT64 sid = atoll(sidString.c_str());
 	if (sid != -1) {
-		sids.push_back(sid);
+		sidDatabase.push_back(sid);
 	}
 	return 0;
 }
@@ -87,26 +83,26 @@ void DB::topDirSearch(string path)
 
 void DB::InitDataBase(string songDir) {
 	auto oldClock = clock();
-	lock.WriteLock();
+	databaseLock.WriteLock();
 	topDirSearch(songDir);
-	lock.Unlock();
+	databaseLock.Unlock();
 	auto newClock = clock();
 	logger::WriteLogFormat("[*] init sid database in %dms", newClock - oldClock);
 }
 
 bool DB::sidExist(UINT64 sid) {
-	lock.ReadLock();
-	auto iter = find(sids.begin(), sids.end(), sid);
-	if (iter != sids.end()) {
-		lock.Unlock();
+	databaseLock.ReadLock();
+	auto iter = find(sidDatabase.begin(), sidDatabase.end(), sid);
+	if (iter != sidDatabase.end()) {
+		databaseLock.Unlock();
 		return true;
 	}
-	lock.Unlock();
+	databaseLock.Unlock();
 	return false;
 }
 
 void DB::insertSid(UINT64 sid) {
-	lock.WriteLock();
-	sids.push_back(sid);
-	lock.Unlock();
+	databaseLock.WriteLock();
+	sidDatabase.push_back(sid);
+	databaseLock.Unlock();
 }

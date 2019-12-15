@@ -14,16 +14,16 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 	switch (ul_reason_for_call) {
 	case DLL_PROCESS_ATTACH:
 		logger::WriteLog("======================= Inject Success =======================");
-		CH::inst()->LoadConfig();
-		HK::inst()->InitHook();
+		Config::LoadConfig();
+		HK::InitHook();
 		break;
 	case DLL_THREAD_ATTACH:
 		break;
 	case DLL_THREAD_DETACH:
 		break;
 	case DLL_PROCESS_DETACH:
-		CH::inst()->SaveConfig();
-		HK::inst()->UninitHook();
+		Config::SaveConfig();
+		HK::UninitHook();
 		logger::WriteLog("===================== See you next time ======================");
 		break;
 	}

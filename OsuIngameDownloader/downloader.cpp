@@ -4,21 +4,27 @@
 #include <time.h>
 #include "Downloader.h"
 #include "logger.h"
+#include "utils.h"
 using namespace rapidjson;
 
-const char* DlTypeName[3] = { "Full Version", "No Video", "Mini" };
+const char* DL::DlTypeName[3] = { "Full Version", "No Video", "Mini" };
+LK DL::taskLock;
+bool DL::dontUseDownloader = false;
+int DL::sayobotDownloadType = NOVIDEO;
+map<string, DlInfo> DL::tasks;
+int DL::manualDlType = 0;
+char DL::manualDlId[0x10] = "";
 
 // writer used by curl CURLOPT_WRITEFUNCTION
 size_t stringWriter(char* data, size_t size, size_t nmemb, std::string* writerData) {
-	if (writerData == NULL)
+	if (writerData == NULL) {
 		return 0;
-
+	}
 	writerData->append(data, size * nmemb);
 	return size * nmemb;
 }
 
-size_t fileWriter(void* ptr, size_t size, size_t nmemb, void* stream)
-{
+size_t fileWriter(void* ptr, size_t size, size_t nmemb, void* stream) {
 	size_t written = fwrite(ptr, size, nmemb, (FILE*)stream);
 	return written;
 }
@@ -27,32 +33,19 @@ size_t fileWriter(void* ptr, size_t size, size_t nmemb, void* stream)
 // write out real time information to struct
 int xferinfoCB(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
 	MyProgress* myp = (struct MyProgress*)clientp;
-	DL::inst()->SetTaskReadLock();
-	auto tasks = &DL::inst()->tasks;
-	if (tasks->count(myp->taskKey) < 0) {
-		DL::inst()->UnsetTaskLock();
+	DL::SetTaskReadLock();
+	if (DL::tasks.count(myp->taskKey) < 0) {
+		DL::UnsetTaskLock();
 		return 1;
 	}
-	DL::inst()->UnsetTaskLock();
-	DL::inst()->SetTaskWriteLock();
-	tasks->operator[](myp->taskKey).fileSize = (double)dltotal;
-	tasks->operator[](myp->taskKey).downloaded = (double)dlnow;
-	tasks->operator[](myp->taskKey).percent = (float)((double)dlnow / (double)dltotal);
-	DL::inst()->UnsetTaskLock();
+	DL::UnsetTaskLock();
+	DL::SetTaskWriteLock();
+	DL::tasks[myp->taskKey].fileSize = (double)dltotal;
+	DL::tasks[myp->taskKey].downloaded = (double)dlnow;
+	DL::tasks[myp->taskKey].percent = (float)((double)dlnow / (double)dltotal);
+	DL::UnsetTaskLock();
 	return 0;
 }
-
-DL::DL() {
-	curl_global_init(CURL_GLOBAL_ALL);
-}
-
-DL::~DL() { }
-
-DL* DL::inst() {
-	static DL Downloader;
-	return &Downloader;
-}
-
 
 // GET requests, return string
 CURLcode DL::CurlGetReq(const string url, string& response) {
@@ -105,7 +98,7 @@ CURLcode DL::CurlDownload(const string url, const string fileName, MyProgress* p
 }
 
 // use sayobot api to parse sid,song name,category by osu beatmap url
-int DL::ParseInfo(string url, UINT64& sid, string& songName, int& category) {
+int DL::SayobotParseInfo(string url, UINT64& sid, string& songName, int& category) {
 	logger::WriteLogFormat("[*] parsing %s", url.c_str());
 	string parseApiUrl = "https://api.sayobot.cn/v2/beatmapinfo?0=" + url;
 	string content;
@@ -114,25 +107,25 @@ int DL::ParseInfo(string url, UINT64& sid, string& songName, int& category) {
 
 	auto res = CurlGetReq(parseApiUrl, content);
 	if (res) {
-		logger::WriteLogFormat("[-] ParseSid: can't get json content, %s", curl_easy_strerror(res));
+		logger::WriteLogFormat("[-] SayobotParseInfo: can't get json content, %s", curl_easy_strerror(res));
 		return 1;
 	}
 	jContent.Parse(content.c_str());
 	if (!jContent.HasMember("status")) {
-		logger::WriteLogFormat("[-] ParseSid: Wrong json format: doesn't contain member 'status'");
+		logger::WriteLogFormat("[-] SayobotParseInfo: Wrong json format: doesn't contain member 'status'");
 		return 2;
 	}
 	status = jContent["status"].GetInt();
 	if (status) {
-		logger::WriteLogFormat("[-] ParseSid: Sayobot err-code: %d", status);
+		logger::WriteLogFormat("[-] SayobotParseInfo: Sayobot err-code: %d", status);
 		return 3;
 	}
 	if (!jContent.HasMember("data")) {
-		logger::WriteLogFormat("[-] ParseSid: Wrong json format: doesn't contain member 'data'");
+		logger::WriteLogFormat("[-] SayobotParseInfo: Wrong json format: doesn't contain member 'data'");
 		return 4;
 	}
 	if (!jContent["data"].HasMember("sid") || !jContent["data"].HasMember("title") || !jContent["data"].HasMember("approved")) {
-		logger::WriteLogFormat("[-] ParseSid: Wrong json format: doesn't contain member 'sid' or 'title' or 'approved'");
+		logger::WriteLogFormat("[-] SayobotParseInfo: Wrong json format: doesn't contain member 'sid' or 'title' or 'approved'");
 		return 5;
 	}
 	sid = jContent["data"]["sid"].GetUint64();
@@ -142,10 +135,10 @@ int DL::ParseInfo(string url, UINT64& sid, string& songName, int& category) {
 }
 
 // download beatmap from sayobot server to file by using sid
-int DL::StartDownload(string fileName, UINT64 sid, string taskKey) {
+int DL::SayobotDownload(string fileName, UINT64 sid, string taskKey) {
 	logger::WriteLogFormat("[*] downloading sid %llu", sid);
 	string downloadApiUrl;
-	switch (DL::inst()->downloadType) {
+	switch (DL::sayobotDownloadType) {
 	case FULL:
 		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/full/" + to_string(sid) + "?server=0";
 		break;
@@ -163,11 +156,19 @@ int DL::StartDownload(string fileName, UINT64 sid, string taskKey) {
 	myp->taskKey = taskKey;
 	auto res = DL::CurlDownload(downloadApiUrl, fileName, myp);
 	if (res) {
-		logger::WriteLogFormat("[-] StartDownload: err while downloading, %s", curl_easy_strerror(res));
+		logger::WriteLogFormat("[-] SayobotDownload: err while downloading, %s", curl_easy_strerror(res));
 		delete myp;
 		return 2;
 	}
 	delete myp;
+	return 0;
+}
+
+int DL::ManualDownload(string id, int idType) {
+	string url = idType == 0 ? "https://osu.ppy.sh/s/" + id : "https://osu.ppy.sh/b/" + id;
+	LPCWSTR w_url = char2wchar(url.c_str());
+	ShellExecute(0, 0, w_url, 0, 0, SW_HIDE);
+	delete w_url;
 	return 0;
 }
 

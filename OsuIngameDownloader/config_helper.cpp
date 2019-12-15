@@ -23,9 +23,9 @@ int Config::LoadConfig() {
 	ifs >> result;
 	ifs.close();
 	d.Parse(result.c_str());
-	// save download type(full, no video, mini)
-	if (d.HasMember("downloadType")) {
-		DL::downloadType = d["downloadType"].GetInt();
+	// save Sayobot download type(full, no video, mini)
+	if (d.HasMember("sayobotDownloadType")) {
+		DL::sayobotDownloadType = d["sayobotDownloadType"].GetInt();
 	}
 	// save flag dontUseDownloader
 	if (d.HasMember("dontUseDownloader")) {
@@ -45,8 +45,8 @@ int Config::SaveConfig() {
 		return 1;
 	}
 	writer.StartObject();
-	writer.Key("downloadType");
-	writer.Int(DL::downloadType);
+	writer.Key("sayobotDownloadType");
+	writer.Int(DL::sayobotDownloadType);
 	writer.Key("dontUseDownloader");
 	writer.Bool(DL::dontUseDownloader);
 	writer.EndObject();

@@ -222,7 +222,7 @@ void OV::RenderOverlay(HDC hdc) {
 		ImGui::Text("> Sayobot Mirror Settings: ");
 		ImGui::Text("OSZ Version: ");
 		ImGui::SameLine();
-		ImGui::Combo("", &DL::downloadType, DL::DlTypeName, IM_ARRAYSIZE(DL::DlTypeName));
+		ImGui::Combo("", &DL::sayobotDownloadType, DL::DlTypeName, IM_ARRAYSIZE(DL::DlTypeName));
 		ImGui::SameLine();
 		HelpMarker("Help:\n1. <Full Version> is full version.\n2. <No Video> doesn't contain video.\n3. <Mini> doesn't contain video and keysound.");
 		ImGui::End();

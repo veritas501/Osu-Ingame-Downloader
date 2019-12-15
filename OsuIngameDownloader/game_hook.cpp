@@ -80,7 +80,7 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	DL::tasks[url].songName = url;
 	DL::UnsetTaskLock();
 	// parse sid, song name and category
-	res = DL::ParseInfo(url, sid, songName, category);
+	res = DL::SayobotParseInfo(url, sid, songName, category);
 	if (res) {
 		CallOriShellExecuteExW(url);
 		goto finish;
@@ -102,7 +102,7 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	fileName.append(tmpPath);
 	fileName.append(to_string(sid));
 	fileName.append(".osz");
-	res = DL::StartDownload(fileName, sid, url);
+	res = DL::SayobotDownload(fileName, sid, url);
 	if (res) {
 		CallOriShellExecuteExW(url);
 		goto finish;

@@ -48,15 +48,15 @@ namespace DL {
 	extern const char* DlTypeName[3];
 	extern LK taskLock;
 	extern bool dontUseDownloader;
-	extern int downloadType;
+	extern int sayobotDownloadType;
 	extern map<string, DlInfo> tasks;
 	extern int manualDlType;
 	extern char manualDlId[0x10];
 
 	CURLcode CurlGetReq(const string url, string& response);
 	CURLcode CurlDownload(const string url, const string fileName, MyProgress* prog);
-	int ParseInfo(string url, UINT64& sid, string& songName, int& approved);
-	int StartDownload(string fileName, UINT64 sid, string taskKey);
+	int SayobotParseInfo(string url, UINT64& sid, string& songName, int& approved);
+	int SayobotDownload(string fileName, UINT64 sid, string taskKey);
 	int ManualDownload(string id, int idType);
 	int RemoveTaskInfo(string url);
 	void SetTaskReadLock();

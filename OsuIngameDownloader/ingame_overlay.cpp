@@ -4,7 +4,7 @@
 #include "downloader.h"
 #include "map_db.h"
 
-#define VERSION "Version: Beta 0.6"
+#define VERSION "Version: Beta 0.7"
 
 OV* OV::inst() {
 	static OV _ov;
@@ -215,7 +215,7 @@ void OV::RenderOverlay(HDC hdc) {
 		ImGui::SameLine();
 		HelpMarker("Help:\nBid and Sid can be found in urls\n1. osu.ppy.sh/b/{Bid}\n2. osu.ppy.sh/s/{Sid}\n3. osu.ppy.sh/beatmapsets/{Sid}#osu/{Bid}");
 		static int manualDlType = 0;
-		static char manualDlId[15] = "347650";
+		static char manualDlId[15] = "";
 		ImGui::RadioButton("Sid", &manualDlType, 0); ImGui::SameLine();
 		ImGui::RadioButton("Bid", &manualDlType, 1);
 		ImGui::InputTextWithHint("##input_song_id","song id", manualDlId, IM_ARRAYSIZE(manualDlId)); ImGui::SameLine();
@@ -223,32 +223,13 @@ void OV::RenderOverlay(HDC hdc) {
 			HK::inst()->ManualDownload(manualDlId, manualDlType);
 		}
 		ImGui::Separator();
-		ImGui::Text("> Download Engine: ");
-		ImGui::SameLine();
-		HelpMarker("Help:\nChoose which server to parse song information and download beatmapsets\nFor chinese users, choose Sayobot mirror to get better experience.");
-		static int engine = 0;
-		ImGui::RadioButton("Sayobot Mirror", &engine, 0); ImGui::SameLine();
-		ImGui::RadioButton("Osu! Official", &engine, 1);
-		ImGui::Separator();
-
+		
 		ImGui::Text("> Sayobot Mirror Settings: ");
 		ImGui::Text("OSZ Version: ");
 		ImGui::SameLine();
 		ImGui::Combo("", &DL::inst()->downloadType, DlTypeName, IM_ARRAYSIZE(DlTypeName));
 		ImGui::SameLine();
 		HelpMarker("Help:\n1. <Full Version> is full version.\n2. <No Video> doesn't contain video.\n3. <Mini> doesn't contain video and keysound.");
-		ImGui::Separator();
-
-		ImGui::Text("> Osu! Official Settings: ");
-		ImGui::SameLine();
-		HelpMarker("In order to use osu! official download server,\nyou need login, I WON'T collect any personal information.");
-		ImGui::Text("Login: ");
-		static char username[50]="";
-		static char password[50]="";
-		ImGui::InputTextWithHint("##input_username", "Username", username, IM_ARRAYSIZE(username));
-		ImGui::InputTextWithHint("##input_password", "Password", password, IM_ARRAYSIZE(password), ImGuiInputTextFlags_Password | ImGuiInputTextFlags_CharsNoBlank);
-		static bool osuNoVideo = true;
-		ImGui::Checkbox("No Video", &osuNoVideo);
 
 		ImGui::End();
 	}

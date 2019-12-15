@@ -52,7 +52,7 @@ LPCWSTR char2wchar(const char* c)
 	return wc;
 }
 
-BOOL CallOriShellExecuteExW(char* lpFile) {
+BOOL CallOriShellExecuteExW(const char* lpFile) {
 	LPSHELLEXECUTEINFOW pExecinfo = new _SHELLEXECUTEINFOW;
 	ZeroMemory(pExecinfo, sizeof(_SHELLEXECUTEINFOW));
 	pExecinfo->cbSize = sizeof(_SHELLEXECUTEINFOW);
@@ -133,7 +133,7 @@ finish:
 }
 
 BOOL __stdcall DetourShellExecuteExW(LPSHELLEXECUTEINFOW pExecinfo) {
-	int findPos1, findPos2;
+	int findPos1, findPos2, findPos3;
 	char* lpFile;
 	HANDLE hThread;
 	if (DL::inst()->dontUseDownloader) {
@@ -141,8 +141,8 @@ BOOL __stdcall DetourShellExecuteExW(LPSHELLEXECUTEINFOW pExecinfo) {
 	}
 	findPos1 = wstring(pExecinfo->lpFile).find(L"osu.ppy.sh/b/");
 	findPos2 = wstring(pExecinfo->lpFile).find(L"osu.ppy.sh/s/");
-	findPos2 = wstring(pExecinfo->lpFile).find(L"osu.ppy.sh/beatmapsets/");
-	if ((findPos1 == -1) && (findPos2 == -1)) {
+	findPos3 = wstring(pExecinfo->lpFile).find(L"osu.ppy.sh/beatmapsets/");
+	if ((findPos1 == -1) && (findPos2 == -1) && (findPos3 == -1)) {
 		goto call_api; // not the target
 	}
 
@@ -160,14 +160,19 @@ call_api:
 	return HK::inst()->OriShellExecuteExW(pExecinfo);
 }
 
+int HK::ManualDownload(string id, int idType) {
+	string url = idType == 0? "https://osu.ppy.sh/s/" + id: "https://osu.ppy.sh/b/" + id;
+	LPCWSTR w_url = char2wchar(url.c_str());
+	ShellExecute(0, 0, w_url, 0, 0, SW_HIDE);
+	delete w_url;
+	return 0;
+}
+
 LRESULT CALLBACK GetMsgProc(int nCode, WPARAM wParam, LPARAM lParam) {
 	if (nCode != HC_ACTION)	{
 		return CallNextHookEx(HK::inst()->msgHook, nCode, wParam, lParam);
 	}
 	MSG* msg = (MSG*)lParam;
-	if (WM_KEYFIRST <= msg->message && msg->message <= WM_KEYLAST) {
-		logger::WriteLogFormat("wP: %p, msg: %p, hwnd: %p, char: %c, lp: %p", wParam,msg->message, msg->hwnd, msg->wParam, msg->lParam);
-	}
 	//The message has been removed from the queue.
 	if (wParam == PM_REMOVE) {
 		// hotkey Alt+M press
@@ -193,7 +198,6 @@ LRESULT CALLBACK GetMsgProc(int nCode, WPARAM wParam, LPARAM lParam) {
 			return 1;
 		}
 	}
-
 	return CallNextHookEx(HK::inst()->msgHook, nCode, wParam, lParam);
 }
 

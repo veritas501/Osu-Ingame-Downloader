@@ -29,6 +29,37 @@ size_t fileWriter(void* ptr, size_t size, size_t nmemb, void* stream) {
 	return written;
 }
 
+//convert UTF-8 to GB2312
+char* UTF8toGB2312(const char* utf8)
+{
+	int len = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
+	wchar_t* wstr = new wchar_t[len + 1];
+	memset(wstr, 0, len + 1);
+	MultiByteToWideChar(CP_UTF8, 0, utf8, -1, wstr, len);
+	len = WideCharToMultiByte(CP_ACP, 0, wstr, -1, NULL, 0, NULL, NULL);
+	char* str = new char[len + 1];
+	memset(str, 0, len + 1);
+	WideCharToMultiByte(CP_ACP, 0, wstr, -1, str, len, NULL, NULL);
+	if (wstr) delete[] wstr;
+	return str;
+}
+
+//convert GB2312 to UTF-8
+char* GB2312toUTF8(const char* gb2312)
+{
+	int len = MultiByteToWideChar(CP_ACP, 0, gb2312, -1, NULL, 0);
+	wchar_t* wstr = new wchar_t[len + 1];
+	memset(wstr, 0, len + 1);
+	MultiByteToWideChar(CP_ACP, 0, gb2312, -1, wstr, len);
+	len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
+	char* str = new char[len + 1];
+	memset(str, 0, len + 1);
+	WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, len, NULL, NULL);
+	if (wstr) delete[] wstr;
+	return str;
+}
+
+
 // xferinfo callback function
 // write out real time information to struct
 int xferinfoCB(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
@@ -110,7 +141,13 @@ int DL::SayobotParseInfo(string url, UINT64& sid, string& songName, int& categor
 		logger::WriteLogFormat("[-] SayobotParseInfo: can't get json content, %s", curl_easy_strerror(res));
 		return 1;
 	}
-	jContent.Parse(content.c_str());
+
+	string utf8Content = GB2312toUTF8(content.c_str());
+	jContent.Parse(utf8Content.c_str());
+	if (jContent.HasParseError()) {
+		logger::WriteLogFormat("[-] SayobotParseInfo: unknown parsing error");
+		return 6;
+	}
 	if (!jContent.HasMember("status")) {
 		logger::WriteLogFormat("[-] SayobotParseInfo: Wrong json format: doesn't contain member 'status'");
 		return 2;

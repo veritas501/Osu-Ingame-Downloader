@@ -4,7 +4,7 @@
 #include "downloader.h"
 #include "map_db.h"
 
-#define VERSION "Version: Beta 0.7.5"
+#define VERSION "Version: 0.8"
 
 bool OV::showStatus = false;
 bool OV::showSetting = false;

@@ -44,12 +44,6 @@
     <ClInclude Include="map_db.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="version_hijack.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="xinput_hijack.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="utils.h">
       <Filter>Headers</Filter>
     </ClInclude>

@@ -9,19 +9,14 @@
 #define SETTING_WINDOW_NAME "InGameDownload - Settings"
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-LRESULT CALLBACK DetourWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-// overlay class
-class OV {
-private:
-	bool showStatus = false;
-	bool showSetting = false;
-	int statusPinned = 1;
+// short for overlay
+namespace OV {
+	extern bool showStatus;
+	extern bool showSetting;
+	extern int statusPinned;
+
 	void HelpMarker(const char* desc);
-public:
-	OV() {}
-	~OV() {}
-	static OV* inst();
 	bool isShowingSettings();
 	void ReverseShowSettings();
 	bool isShowingStatus();
@@ -29,4 +24,4 @@ public:
 	void HideStatus();
 	void InitOverlay(HDC hdc);
 	void RenderOverlay(HDC hdc);
-};
+}

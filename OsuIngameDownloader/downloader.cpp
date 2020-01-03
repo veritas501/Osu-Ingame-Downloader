@@ -94,6 +94,13 @@ CURLcode DL::CurlGetReq(const string url, string& response) {
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&response);
 		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 		res = curl_easy_perform(curl);
+		if (res == CURLE_OK) {
+			long response_code;
+			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+			if (response_code != 200) {
+				res = CURL_LAST;
+			}
+		}
 	}
 	curl_easy_cleanup(curl);
 	return res;
@@ -122,6 +129,13 @@ CURLcode DL::CurlDownload(const string url, const string fileName, MyProgress* p
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
 			res = curl_easy_perform(curl);
 			fclose(fp);
+		}
+		if (res == CURLE_OK) {
+			long response_code;
+			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+			if (response_code != 200) {
+				res = CURL_LAST;
+			}
 		}
 	}
 	curl_easy_cleanup(curl);
@@ -189,7 +203,7 @@ int DL::SayobotDownload(string fileName, UINT64 sid, string taskKey) {
 		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/novideo/" + to_string(sid) + "?server=0";
 		break;
 	}
-	MyProgress* myp = new MyProgress;
+	MyProgress* myp = new MyProgress();
 	myp->taskKey = taskKey;
 	auto res = DL::CurlDownload(downloadApiUrl, fileName, myp);
 	if (res) {

@@ -6,6 +6,7 @@
 #include "downloader.h"
 #include "map_db.h"
 #include "utils.h"
+#include "update.h"
 using namespace std;
 
 UINT HK::raw_devices_count = -1;
@@ -25,13 +26,21 @@ BOOL __stdcall InitPlugin(HDC hdc) {
 	// init overlay
 	OV::InitOverlay(hdc);
 	// init sid database;
-	HANDLE hThread = reinterpret_cast<HANDLE>(_beginthreadex(0, 0,
+	HANDLE InitDatabaseThread = reinterpret_cast<HANDLE>(_beginthreadex(0, 0,
 		[](void* pData) -> unsigned int {
 			DB::InitDataBase("Songs");
 			return 0;
 		}, NULL, 0, NULL));
-	if (hThread) {
-		CloseHandle(hThread);
+	if (InitDatabaseThread) {
+		CloseHandle(InitDatabaseThread);
+	}
+	HANDLE UpdateThread = reinterpret_cast<HANDLE>(_beginthreadex(0, 0,
+		[](void* pData) -> unsigned int {
+			Update::CheckUpdateService();
+			return 0;
+		}, NULL, 0, NULL));
+	if (UpdateThread) {
+		CloseHandle(UpdateThread);
 	}
 	// rehook swapbuffer
 	HK::ReHookSwapBuffers();

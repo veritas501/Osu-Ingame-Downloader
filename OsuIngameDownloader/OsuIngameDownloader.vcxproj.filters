@@ -47,6 +47,9 @@
     <ClInclude Include="utils.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="update.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -95,6 +98,9 @@
       <Filter>Deps\gl3w</Filter>
     </ClCompile>
     <ClCompile Include="utils.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="update.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
   </ItemGroup>

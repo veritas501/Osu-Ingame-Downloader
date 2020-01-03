@@ -3,8 +3,7 @@
 #include "UbuntuMono_R_ttf.h"
 #include "downloader.h"
 #include "map_db.h"
-
-#define VERSION "Version: 0.8"
+#include "update.h"
 
 bool OV::showStatus = false;
 bool OV::showSetting = false;
@@ -197,7 +196,7 @@ void OV::RenderOverlay(HDC hdc) {
 	if (showSetting) {
 		ImGui::Begin(SETTING_WINDOW_NAME, nullptr, ImVec2(0, 0), -1, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize);
 		ImGui::Text("=============[ InGame Downloader ]=============");
-		ImGui::Text(VERSION);
+		ImGui::Text("Version: " VERSION);
 		ImGui::Text("Author: veritas501");
 		ImGui::Text("Site: https://git.io/IngameDL");
 		ImGui::Separator();

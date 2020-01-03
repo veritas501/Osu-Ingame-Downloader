@@ -8,9 +8,9 @@
 
 本下载器的实现方式和steam中`shift+tab`的overlay以及OsuSync中的[IngameOverlay](https://github.com/OsuSync/IngameOverlay) 是一样的。
 
-但由于需要注入DLL到Osu!中并修改Osu!的Render以及劫持某些API，如果用户使用后因本插件被Ban，作者不承担任何责任。
+只要不涉及游戏数据作弊，Osu!还是比较宽容的，因此虽然下载器需要注入DLL到Osu!中并修改Osu!的Render以及劫持某些API，但正常使用是不会被Ban的。如果用户使用后因本插件被Ban，作者不承担任何责任。
 
-PS：作为参考，使用OsuSync的IngameOverlay不会被ban， https://osu.ppy.sh/community/forums/topics/697214?n=78
+PS：作为参考，使用OsuSync的IngameOverlay不会被Ban， https://osu.ppy.sh/community/forums/topics/697214?n=78
 
 ## DLL下载
 
@@ -18,13 +18,12 @@ PS：作为参考，使用OsuSync的IngameOverlay不会被ban， https://osu.ppy
 
 ## 食用方法
 
-1. DLL的加载有三种方法，选择一种适合你的：
-   1. 将`version.dll`复制到Osu!游戏文件夹下（不一定起效，游戏启动后按`Alt+M`测试是否成功）
-   2. 将`xinput1_4.dll`复制到Osu!游戏文件夹下（不一定起效，游戏启动后按`Alt+M`测试是否成功）
-   3. 利用注入器（还没写，请使用第三方注入器）将`IngameDL.dll`注入到游戏中
-2. 游戏内按`Alt+M`可以唤出设置窗口，此时可以调整偏好选项或停用下载器，且可以自由移动`Status`窗口的位置
-3. `Status`窗口平时是隐藏的，只有在有下载任务的时候显示，下载完成后会再次隐藏。
-4. 插件会判断铺面是否已经存在，如果存在则不再下载且打开浏览器。
+1. 从[下载页](https://github.com/veritas501/Osu-Ingame-Downloader/releases )下载`IngameDL.dll`和`loader.zip`。
+2. 将`IngameDL.dll`放入Osu!的游戏目录下，即和`osu!.exe`在同一目录。
+3. 从`loader.zip`中选择一个加载器放入Osu!的游戏目录下。启动Osu!，在游戏内按`Alt+M`测试下载器是否启动成功。
+4. 游戏内按`Alt+M`可以唤出设置窗口，此时可以调整偏好选项或停用下载器，且可以自由移动`Status`窗口的位置
+5. `Status`窗口平时是隐藏的，只有在有下载任务的时候显示，下载完成后会再次隐藏。
+6. 插件会判断铺面是否已经存在，如果存在则不再下载且打开浏览器。
 
 ## 演示视频
 

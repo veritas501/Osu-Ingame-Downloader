@@ -98,6 +98,7 @@ CURLcode DL::CurlGetReq(const string url, string& response) {
 			long response_code;
 			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
 			if (response_code != 200) {
+				logger::WriteLogFormat("[-] CurlDownload: response_code %ld", response_code);
 				res = CURL_LAST;
 			}
 		}
@@ -134,6 +135,7 @@ CURLcode DL::CurlDownload(const string url, const string fileName, MyProgress* p
 			long response_code;
 			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
 			if (response_code != 200) {
+				logger::WriteLogFormat("[-] CurlDownload: response_code %ld", response_code);
 				res = CURL_LAST;
 			}
 		}

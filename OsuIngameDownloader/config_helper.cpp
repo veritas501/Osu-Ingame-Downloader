@@ -31,6 +31,10 @@ int Config::LoadConfig() {
 	if (d.HasMember("dontUseDownloader")) {
 		DL::dontUseDownloader = d["dontUseDownloader"].GetBool();
 	}
+	// save flag downloadFromCDN
+	if (d.HasMember("downloadFromCDN")) {
+		DL::downloadFromCDN = d["downloadFromCDN"].GetBool();
+	}
 	return 0;
 }
 
@@ -49,6 +53,8 @@ int Config::SaveConfig() {
 	writer.Int(DL::sayobotDownloadType);
 	writer.Key("dontUseDownloader");
 	writer.Bool(DL::dontUseDownloader);
+	writer.Key("downloadFromCDN");
+	writer.Bool(DL::downloadFromCDN);
 	writer.EndObject();
 	result = sb.GetString();
 	ofs << result << endl;

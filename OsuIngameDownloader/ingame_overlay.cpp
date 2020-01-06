@@ -224,6 +224,9 @@ void OV::RenderOverlay(HDC hdc) {
 		ImGui::Combo("", &DL::sayobotDownloadType, DL::DlTypeName, IM_ARRAYSIZE(DL::DlTypeName));
 		ImGui::SameLine();
 		HelpMarker("Help:\n1. <Full Version> is full version.\n2. <No Video> doesn't contain video.\n3. <Mini> doesn't contain video and keysound.");
+		ImGui::Checkbox("Download From CDN", &DL::downloadFromCDN);
+		ImGui::SameLine();
+		HelpMarker("If you can't download, try this option.\n(NOT always work)");
 		ImGui::End();
 	}
 

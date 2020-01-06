@@ -10,6 +10,7 @@ using namespace rapidjson;
 const char* DL::DlTypeName[3] = { "Full Version", "No Video", "Mini" };
 LK DL::taskLock;
 bool DL::dontUseDownloader = false;
+bool DL::downloadFromCDN = false;
 int DL::sayobotDownloadType = NOVIDEO;
 map<string, DlInfo> DL::tasks;
 int DL::manualDlType = 0;
@@ -58,7 +59,6 @@ char* GB2312toUTF8(const char* gb2312)
 	if (wstr) delete[] wstr;
 	return str;
 }
-
 
 // xferinfo callback function
 // write out real time information to struct
@@ -189,20 +189,27 @@ int DL::SayobotParseInfo(string url, UINT64& sid, string& songName, int& categor
 
 // download beatmap from sayobot server to file by using sid
 int DL::SayobotDownload(string fileName, UINT64 sid, string taskKey) {
-	logger::WriteLogFormat("[*] downloading sid %llu", sid);
 	string downloadApiUrl;
+	string server;
+	if (downloadFromCDN) {
+		server = "CDN";
+	}
+	else {
+		server = "0";
+	}
+	logger::WriteLogFormat("[*] downloading sid %llu", sid);
 	switch (DL::sayobotDownloadType) {
 	case FULL:
-		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/full/" + to_string(sid) + "?server=0";
+		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/full/" + to_string(sid) + "?server=" + server;
 		break;
 	case NOVIDEO:
-		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/novideo/" + to_string(sid) + "?server=0";
+		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/novideo/" + to_string(sid) + "?server=" + server;
 		break;
 	case MINI:
-		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/mini/" + to_string(sid) + "?server=0";
+		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/mini/" + to_string(sid) + "?server=" + server;
 		break;
 	default:
-		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/novideo/" + to_string(sid) + "?server=0";
+		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/novideo/" + to_string(sid) + "?server=" + server;
 		break;
 	}
 	MyProgress* myp = new MyProgress();

@@ -48,6 +48,7 @@ namespace DL {
 	extern const char* DlTypeName[3];
 	extern LK taskLock;
 	extern bool dontUseDownloader;
+	extern bool downloadFromCDN;
 	extern int sayobotDownloadType;
 	extern map<string, DlInfo> tasks;
 	extern int manualDlType;

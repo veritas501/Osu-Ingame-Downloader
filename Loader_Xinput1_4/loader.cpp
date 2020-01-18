@@ -29,6 +29,10 @@ int LoaderInitialize() {
 		}
 	}
 
+	// module already loaded.
+	if (GetModuleHandleA("IngameDL.dll")) {
+		return 0;
+	}
 	// load main module
 	hm = LoadLibraryA("IngameDL.dll");
 	if (!hm) {

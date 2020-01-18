@@ -17,7 +17,7 @@ enum DlStatus {
 	DOWNLOAD
 };
 
-enum SayobotCategory {
+enum Category {
 	UNKNOWN = -3,
 	GRAVEYARD = -2,
 	WIP = -1,
@@ -33,7 +33,7 @@ struct DlInfo {
 	DlStatus dlStatus = NONE;
 	UINT64 sid = 0;
 	string songName = "";
-	SayobotCategory category = UNKNOWN;
+	Category category = UNKNOWN;
 	double fileSize = 0;
 	double downloaded = 0;
 	float percent = 0;

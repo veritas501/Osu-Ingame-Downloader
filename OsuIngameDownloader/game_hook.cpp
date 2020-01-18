@@ -104,7 +104,7 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	DL::tasks[url].dlStatus = DOWNLOAD;
 	DL::tasks[url].songName = songName;
 	DL::tasks[url].sid = sid;
-	DL::tasks[url].category = (SayobotCategory)category;
+	DL::tasks[url].category = (Category)category;
 	DL::UnsetTaskLock();
 	// download map
 	GetTempPathA(MAX_PATH, tmpPath);

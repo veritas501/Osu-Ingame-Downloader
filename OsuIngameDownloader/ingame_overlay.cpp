@@ -4,6 +4,7 @@
 #include "downloader.h"
 #include "map_db.h"
 #include "update.h"
+#include "osu_auth.h"
 
 bool OV::showStatus = false;
 bool OV::showSetting = false;
@@ -64,8 +65,8 @@ void OV::InitOverlay(HDC hdc) {
 	style->Colors[ImGuiCol_CheckMark] = { 0.90f, 0.90f, 0.90f, 0.83f };
 	style->Colors[ImGuiCol_SliderGrab] = { 0.70f, 0.70f, 0.70f, 0.62f };
 	style->Colors[ImGuiCol_SliderGrabActive] = { 0.30f, 0.30f, 0.30f, 0.84f };
-	style->Colors[ImGuiCol_Button] = { 0.33f, 0.35f, 0.36f, 0.49f };
-	style->Colors[ImGuiCol_ButtonHovered] = { 0.21f, 0.30f, 0.41f, 1.00f };
+	style->Colors[ImGuiCol_Button] = { 0.59f, 0.63f, 0.65f, 0.49f };
+	style->Colors[ImGuiCol_ButtonHovered] = { 0.35f, 0.47f, 0.61f, 1.00f };
 	style->Colors[ImGuiCol_ButtonActive] = { 0.13f, 0.19f, 0.26f, 1.00f };
 	style->Colors[ImGuiCol_Header] = { 0.33f, 0.35f, 0.36f, 0.53f };
 	style->Colors[ImGuiCol_HeaderHovered] = { 0.45f, 0.67f, 0.99f, 0.67f };
@@ -195,20 +196,106 @@ void OV::RenderOverlay(HDC hdc) {
 
 	if (showSetting) {
 		ImGui::Begin(SETTING_WINDOW_NAME, nullptr, ImVec2(0, 0), -1, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize);
-		ImGui::Text("=============[ InGame Downloader ]=============");
+		// basic info
+		ImGui::Text("============[ InGame Downloader ]============");
 		ImGui::Text("Version: " VERSION);
 		ImGui::Text("Author: veritas501");
 		ImGui::Text("Site: https://git.io/IngameDL");
+		// helps
+		if (ImGui::CollapsingHeader("Helps")) {
+			ImGui::Text("1. Use Alt+M to show/hide this window.");
+			ImGui::Text("2. You can move status window now.");
+			ImGui::Text("3. Status window will auto show when download");
+			ImGui::Text("   started, and will auto hide when finished.");
+		}
+		// global settings
+		if (ImGui::CollapsingHeader("Global Settings")) {
+			static int serverId = 0;
+			ImGui::Checkbox("Disable in-game downloader", &DL::dontUseDownloader);
+			ImGui::Text("- Server: ");
+			ImGui::RadioButton("sayobot.cn (mirror site)", &DL::serverId, 0);
+			ImGui::RadioButton("osu.ppy.sh (need login)", &DL::serverId, 1);
+			ImGui::Text("- Proxy: ");
+			ImGui::Checkbox("Use socks5 proxy", &DL::useProxy);
+			ImGui::InputTextWithHint("##serverport", "server:port", DL::proxyServer, sizeof(DL::proxyServer));
+		}
+		// sayobot settings
+		if (ImGui::CollapsingHeader("Sayobot Settings")) {
+			ImGui::Text("- OSZ Version:");
+			ImGui::Combo("##oszVersion1", &DL::sayobotDownloadType, DL::DlTypeName, 3);
+			ImGui::SameLine();
+			HelpMarker("Help:\n1. <Full Version> is full version.\n2. <No Video> doesn't contain video.\n3. <Mini> doesn't contain video and keysound.");
+			ImGui::Text("- CDN: ");
+			ImGui::Checkbox("Download From CDN", &DL::downloadFromCDN);
+			ImGui::SameLine();
+			HelpMarker("If you can't download, try this option.\n(NOT always work)");
+		}
+		// osu.ppy.sh settings
+		if (ImGui::CollapsingHeader("osu.ppy.sh Settings")) {
+			ImGui::Text("- OSZ Version:");
+			ImGui::Combo("##oszVersion2", &DL::ppyDownloadType, DL::DlTypeName, 2);
+			ImGui::SameLine();
+			HelpMarker("Help:\n1. <Full Version> is full version.\n2. <No Video> doesn't contain video.");
+
+			ImGui::Text("- Cookies: ");
+			ImGui::InputTextWithHint("##cookie", "paste cookie here or login", osuAuth::cookie, sizeof(osuAuth::cookie));
+			if (ImGui::Button("Login to get cookie")) {
+				ImGui::OpenPopup("Login to osu");
+			}
+			bool dummy_open1 = true;
+			if (ImGui::BeginPopupModal("Login to osu", &dummy_open1, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize)) {
+				static bool loginSuccess = false;
+				static int loginProcessing = 0; // 0=idle, 1=processing, 2=done
+				static string errorMsg = "";
+				ImGui::Text("Downloader does NOT contain malicious code.");
+				ImGui::Text("Feel free to check the source code.\n");
+				
+				ImGui::InputTextWithHint("##username", "username", osuAuth::username, sizeof(osuAuth::username));
+				ImGui::InputTextWithHint("##password", "password", osuAuth::password, sizeof(osuAuth::password), ImGuiInputTextFlags_Password);
+				if (ImGui::Button("Login") && !loginProcessing) {
+					loginProcessing = 1;
+					HANDLE LoginThread = reinterpret_cast<HANDLE>(_beginthreadex(0, 0,
+						[](void* pData) -> unsigned int {
+							loginSuccess = osuAuth::login(errorMsg);
+							loginProcessing = 2;
+							return 0;
+						}, NULL, 0, NULL));
+					if (LoginThread) {
+						CloseHandle(LoginThread);
+					}
+				}
+				if (loginSuccess) {
+					// login success, close login form
+					loginSuccess = false;
+					loginProcessing = 0;
+					errorMsg = "";
+					ImGui::CloseCurrentPopup();
+				}
+				if (loginProcessing == 1) {
+					// still login....
+					ImGui::SameLine(); ImGui::Text("Wait... %c", "|/-\\"[(int)(ImGui::GetTime() / 0.1f) & 3]);
+				}
+				else if (loginProcessing == 2 && !loginSuccess) {
+					// login failed
+					ImGui::OpenPopup("Login fail");
+				}
+				bool dummy_open2 = true;
+				if (ImGui::BeginPopupModal("Login fail", &dummy_open2, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize)) {
+					ImGui::Text(errorMsg.c_str());
+					if (ImGui::Button("OK##fail_ok")) {
+						loginSuccess = false;
+						loginProcessing = 0;
+						errorMsg = "";
+						ImGui::CloseCurrentPopup();
+					}
+					ImGui::EndPopup();
+				}
+				ImGui::EndPopup();
+			}
+		}
+		// manual download
 		ImGui::Separator();
-		ImGui::Text("Helps: ");
-		ImGui::Text("1. Use Alt+M to show/hide this window.");
-		ImGui::Text("2. You can move status window now.");
-		ImGui::Text("3. Status window will auto show when download");
-		ImGui::Text("   started, and will auto hide when finished.");
-		ImGui::Separator();
-		ImGui::Checkbox("Stop using ingame downloader", &DL::dontUseDownloader);
-		ImGui::Separator();
-		ImGui::Text("> Manual download: ");
+		ImGui::Text("[ Manual Download ]");
 		ImGui::SameLine();
 		HelpMarker("Help:\nBid and Sid can be found in urls\n1. osu.ppy.sh/b/{Bid}\n2. osu.ppy.sh/s/{Sid}\n3. osu.ppy.sh/beatmapsets/{Sid}#osu/{Bid}");
 		ImGui::RadioButton("Sid", &DL::manualDlType, 0); ImGui::SameLine();
@@ -217,16 +304,6 @@ void OV::RenderOverlay(HDC hdc) {
 		if (ImGui::Button("Download")) {
 			DL::ManualDownload(DL::manualDlId, DL::manualDlType);
 		}
-		ImGui::Separator();
-		ImGui::Text("> Sayobot Mirror Settings: ");
-		ImGui::Text("OSZ Version: ");
-		ImGui::SameLine();
-		ImGui::Combo("", &DL::sayobotDownloadType, DL::DlTypeName, IM_ARRAYSIZE(DL::DlTypeName));
-		ImGui::SameLine();
-		HelpMarker("Help:\n1. <Full Version> is full version.\n2. <No Video> doesn't contain video.\n3. <Mini> doesn't contain video and keysound.");
-		ImGui::Checkbox("Download From CDN", &DL::downloadFromCDN);
-		ImGui::SameLine();
-		HelpMarker("If you can't download, try this option.\n(NOT always work)");
 		ImGui::End();
 	}
 

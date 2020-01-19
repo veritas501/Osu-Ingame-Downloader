@@ -77,6 +77,7 @@
     <ClInclude Include="logger.h" />
     <ClInclude Include="map_db.h" />
     <ClInclude Include="config_helper.h" />
+    <ClInclude Include="osu_auth.h" />
     <ClInclude Include="rw_lock.h" />
     <ClInclude Include="UbuntuMono_R_ttf.h" />
     <ClInclude Include="update.h" />
@@ -97,6 +98,7 @@
     <ClCompile Include="ingame_overlay.cpp" />
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="map_db.cpp" />
+    <ClCompile Include="osu_auth.cpp" />
     <ClCompile Include="rw_lock.cpp" />
     <ClCompile Include="update.cpp" />
     <ClCompile Include="utils.cpp" />

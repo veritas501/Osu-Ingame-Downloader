@@ -34,6 +34,7 @@ BOOL __stdcall InitPlugin(HDC hdc) {
 	if (InitDatabaseThread) {
 		CloseHandle(InitDatabaseThread);
 	}
+	// check plugin update
 	HANDLE UpdateThread = reinterpret_cast<HANDLE>(_beginthreadex(0, 0,
 		[](void* pData) -> unsigned int {
 			Update::CheckUpdateService();
@@ -89,7 +90,7 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	DL::tasks[url].songName = url;
 	DL::UnsetTaskLock();
 	// parse sid, song name and category
-	res = DL::SayobotParseInfo(url, sid, songName, category);
+	res = DL::ParseInfo(url, sid, songName, category);
 	if (res) {
 		CallOriShellExecuteExW(url);
 		goto finish;
@@ -111,7 +112,7 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	fileName.append(tmpPath);
 	fileName.append(to_string(sid));
 	fileName.append(".osz");
-	res = DL::SayobotDownload(fileName, sid, url);
+	res = DL::Download(fileName, sid, url);
 	if (res) {
 		CallOriShellExecuteExW(url);
 		goto finish;

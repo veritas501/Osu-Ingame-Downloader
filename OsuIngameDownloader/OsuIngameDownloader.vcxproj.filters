@@ -50,6 +50,9 @@
     <ClInclude Include="update.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="osu_auth.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -101,6 +104,9 @@
       <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="update.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="osu_auth.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
   </ItemGroup>

@@ -5,6 +5,11 @@
 #include "rw_lock.h"
 using namespace std;
 
+enum ServerId {
+	SAYOBOT,
+	OFFICIAL
+};
+
 enum DlType {
 	FULL,
 	NOVIDEO,
@@ -28,7 +33,6 @@ enum Category {
 	LOVED = 4
 };
 
-
 struct DlInfo {
 	DlStatus dlStatus = NONE;
 	UINT64 sid = 0;
@@ -43,24 +47,32 @@ struct MyProgress {
 	string taskKey = "";
 };
 
-
 namespace DL {
 	extern const char* DlTypeName[3];
 	extern LK taskLock;
 	extern bool dontUseDownloader;
 	extern bool downloadFromCDN;
 	extern int sayobotDownloadType;
+	extern int ppyDownloadType;
+	extern int serverId;
 	extern map<string, DlInfo> tasks;
 	extern int manualDlType;
 	extern char manualDlId[0x10];
+	extern bool useProxy;
+	extern char proxyServer[0x50];
 
-	CURLcode CurlGetReq(const string url, string& response);
-	CURLcode CurlDownload(const string url, const string fileName, MyProgress* prog);
+	CURLcode CurlGetReq(const string url, string& response, const string cookie = "");
+	CURLcode CurlDownload(const string url, const string fileName, MyProgress* prog, const string cookie = "");
 	int SayobotParseInfo(string url, UINT64& sid, string& songName, int& approved);
+	int OfficialParseInfo(string url, UINT64& sid, string& songName, int& category);
+	int ParseInfo(string url, UINT64& sid, string& songName, int& category);
 	int SayobotDownload(string fileName, UINT64 sid, string taskKey);
+	int OfficialDownload(string fileName, UINT64 sid, string taskKey);
+	int Download(string fileName, UINT64 sid, string taskKey);
 	int ManualDownload(string id, int idType);
 	int RemoveTaskInfo(string url);
 	void SetTaskReadLock();
 	void SetTaskWriteLock();
 	void UnsetTaskLock();
+	void StopAllTask();
 };

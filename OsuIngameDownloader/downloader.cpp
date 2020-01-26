@@ -5,6 +5,7 @@
 #include "Downloader.h"
 #include "logger.h"
 #include "utils.h"
+#include "osu_auth.h"
 using namespace rapidjson;
 
 const char* DL::DlTypeName[3] = { "Full Version", "No Video", "Mini" };
@@ -12,60 +13,20 @@ LK DL::taskLock;
 bool DL::dontUseDownloader = false;
 bool DL::downloadFromCDN = false;
 int DL::sayobotDownloadType = NOVIDEO;
+int DL::ppyDownloadType = NOVIDEO;
+int DL::serverId = SAYOBOT;
 map<string, DlInfo> DL::tasks;
 int DL::manualDlType = 0;
 char DL::manualDlId[0x10] = "";
-
-// writer used by curl CURLOPT_WRITEFUNCTION
-size_t stringWriter(char* data, size_t size, size_t nmemb, std::string* writerData) {
-	if (writerData == NULL) {
-		return 0;
-	}
-	writerData->append(data, size * nmemb);
-	return size * nmemb;
-}
-
-size_t fileWriter(void* ptr, size_t size, size_t nmemb, void* stream) {
-	size_t written = fwrite(ptr, size, nmemb, (FILE*)stream);
-	return written;
-}
-
-//convert UTF-8 to GB2312
-char* UTF8toGB2312(const char* utf8)
-{
-	int len = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
-	wchar_t* wstr = new wchar_t[len + 1];
-	memset(wstr, 0, len + 1);
-	MultiByteToWideChar(CP_UTF8, 0, utf8, -1, wstr, len);
-	len = WideCharToMultiByte(CP_ACP, 0, wstr, -1, NULL, 0, NULL, NULL);
-	char* str = new char[len + 1];
-	memset(str, 0, len + 1);
-	WideCharToMultiByte(CP_ACP, 0, wstr, -1, str, len, NULL, NULL);
-	if (wstr) delete[] wstr;
-	return str;
-}
-
-//convert GB2312 to UTF-8
-char* GB2312toUTF8(const char* gb2312)
-{
-	int len = MultiByteToWideChar(CP_ACP, 0, gb2312, -1, NULL, 0);
-	wchar_t* wstr = new wchar_t[len + 1];
-	memset(wstr, 0, len + 1);
-	MultiByteToWideChar(CP_ACP, 0, gb2312, -1, wstr, len);
-	len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
-	char* str = new char[len + 1];
-	memset(str, 0, len + 1);
-	WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, len, NULL, NULL);
-	if (wstr) delete[] wstr;
-	return str;
-}
+bool DL::useProxy = false;
+char DL::proxyServer[0x50] = "";
 
 // xferinfo callback function
 // write out real time information to struct
 int xferinfoCB(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
 	MyProgress* myp = (struct MyProgress*)clientp;
 	DL::SetTaskReadLock();
-	if (DL::tasks.count(myp->taskKey) < 0) {
+	if (DL::tasks.count(myp->taskKey) <= 0) {
 		DL::UnsetTaskLock();
 		return 1;
 	}
@@ -73,18 +34,27 @@ int xferinfoCB(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t u
 	DL::SetTaskWriteLock();
 	DL::tasks[myp->taskKey].fileSize = (double)dltotal;
 	DL::tasks[myp->taskKey].downloaded = (double)dlnow;
-	DL::tasks[myp->taskKey].percent = (float)((double)dlnow / (double)dltotal);
+	if (!dltotal && !dlnow) {
+		DL::tasks[myp->taskKey].percent = 0;
+	}
+	else {
+		DL::tasks[myp->taskKey].percent = (float)((double)dlnow / (double)dltotal);
+	}
 	DL::UnsetTaskLock();
 	return 0;
 }
 
 // GET requests, return string
-CURLcode DL::CurlGetReq(const string url, string& response) {
+CURLcode DL::CurlGetReq(const string url, string& response, const string cookie) {
 	CURL* curl = curl_easy_init();
 	CURLcode res = CURL_LAST;
 	if (curl) {
 		struct curl_slist* header_list = NULL;
 		header_list = curl_slist_append(header_list, "User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
+		if (!cookie.empty()) {
+			string tmpCookie = "cookie: " + cookie;
+			header_list = curl_slist_append(header_list, tmpCookie.c_str());
+		}
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header_list);
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
@@ -93,6 +63,11 @@ CURLcode DL::CurlGetReq(const string url, string& response) {
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, stringWriter);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&response);
 		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 8000);
+		if(useProxy){
+			curl_easy_setopt(curl, CURLOPT_PROXY, proxyServer);
+			curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
+		}
 		res = curl_easy_perform(curl);
 		if (res == CURLE_OK) {
 			long response_code;
@@ -108,13 +83,17 @@ CURLcode DL::CurlGetReq(const string url, string& response) {
 }
 
 // GET requests, write output to file
-CURLcode DL::CurlDownload(const string url, const string fileName, MyProgress* prog) {
+CURLcode DL::CurlDownload(const string url, const string fileName, MyProgress* prog, const string cookie) {
 	CURL* curl = curl_easy_init();
 	CURLcode res = CURL_LAST;
 	FILE* fp;
 	if (curl) {
 		struct curl_slist* header_list = NULL;
 		header_list = curl_slist_append(header_list, "User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
+		if (!cookie.empty()) {
+			string tmpCookie = "cookie: "+ cookie;
+			header_list = curl_slist_append(header_list, tmpCookie.c_str());
+		}
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header_list);
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 0);
@@ -125,6 +104,11 @@ CURLcode DL::CurlDownload(const string url, const string fileName, MyProgress* p
 		curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, xferinfoCB);
 		curl_easy_setopt(curl, CURLOPT_XFERINFODATA, prog);
 		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
+		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 8000);
+		if (useProxy) {
+			curl_easy_setopt(curl, CURLOPT_PROXY, proxyServer);
+			curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
+		}
 		auto err = fopen_s(&fp, fileName.c_str(), "wb");
 		if (fp) {
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
@@ -146,7 +130,6 @@ CURLcode DL::CurlDownload(const string url, const string fileName, MyProgress* p
 
 // use sayobot api to parse sid,song name,category by osu beatmap url
 int DL::SayobotParseInfo(string url, UINT64& sid, string& songName, int& category) {
-	logger::WriteLogFormat("[*] parsing %s", url.c_str());
 	string parseApiUrl = "https://api.sayobot.cn/v2/beatmapinfo?0=" + url;
 	string content;
 	Document jContent;
@@ -187,6 +170,66 @@ int DL::SayobotParseInfo(string url, UINT64& sid, string& songName, int& categor
 	return 0;
 }
 
+// use official server api to parse sid,song name,category by osu beatmap url
+int DL::OfficialParseInfo(string url, UINT64& sid, string& songName, int& category) {
+	string content;
+	Document jContent;
+	size_t offStart = 0;
+	size_t offEnd = 0;
+
+	auto res = CurlGetReq(url, content);
+	if (res) {
+		logger::WriteLogFormat("[-] OfficialParseInfo: can't get page content, %s", curl_easy_strerror(res));
+		return 1;
+	}
+	offStart = content.find("json-beatmapset");
+	if (offStart == -1) {
+		logger::WriteLogFormat("[-] OfficialParseInfo: can't get json content, %s", curl_easy_strerror(res));
+		return 2;
+	}
+	offStart = content.find("{", offStart);
+	if (offStart == -1) {
+		logger::WriteLogFormat("[-] OfficialParseInfo: can't get json content, %s", curl_easy_strerror(res));
+		return 2;
+	}
+	offEnd = content.find("</script>", offStart);
+	if (offEnd == -1) {
+		logger::WriteLogFormat("[-] OfficialParseInfo: can't get json content, %s", curl_easy_strerror(res));
+		return 2;
+	}
+	offEnd = content.rfind("}", offEnd);
+	if (offEnd == -1) {
+		logger::WriteLogFormat("[-] OfficialParseInfo: can't get json content, %s", curl_easy_strerror(res));
+		return 2;
+	}
+	offEnd += 1;
+	content = content.substr(offStart, offEnd - offStart);
+	jContent.Parse(content.c_str());
+	if (jContent.HasParseError()) {
+		logger::WriteLogFormat("[-] OfficialParseInfo: unknown parsing error");
+		return 3;
+	}
+	if (!jContent.HasMember("id") || !jContent.HasMember("title") || !jContent.HasMember("ranked")) {
+		logger::WriteLogFormat("[-] OfficialParseInfo: Wrong json format: doesn't contain member 'id' or 'title' or 'ranked'");
+		return 4;
+	}
+	sid = jContent["id"].GetUint64();
+	songName = jContent["title"].GetString();
+	category = jContent["ranked"].GetInt();
+	return 0;
+}
+
+int DL::ParseInfo(string url, UINT64& sid, string& songName, int& category) {
+	logger::WriteLogFormat("[*] parsing %s", url.c_str());
+	if (serverId == SAYOBOT) {
+		return SayobotParseInfo(url,sid,songName,category);
+	}
+	else if (serverId == OFFICIAL) {
+		return OfficialParseInfo(url, sid, songName, category);
+	}
+	return 1;
+}
+
 // download beatmap from sayobot server to file by using sid
 int DL::SayobotDownload(string fileName, UINT64 sid, string taskKey) {
 	string downloadApiUrl;
@@ -197,17 +240,14 @@ int DL::SayobotDownload(string fileName, UINT64 sid, string taskKey) {
 	else {
 		server = "0";
 	}
-	logger::WriteLogFormat("[*] downloading sid %llu", sid);
 	switch (DL::sayobotDownloadType) {
 	case FULL:
 		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/full/" + to_string(sid) + "?server=" + server;
 		break;
-	case NOVIDEO:
-		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/novideo/" + to_string(sid) + "?server=" + server;
-		break;
 	case MINI:
 		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/mini/" + to_string(sid) + "?server=" + server;
 		break;
+	case NOVIDEO:
 	default:
 		downloadApiUrl = "https://txy1.sayobot.cn/beatmaps/download/novideo/" + to_string(sid) + "?server=" + server;
 		break;
@@ -224,7 +264,56 @@ int DL::SayobotDownload(string fileName, UINT64 sid, string taskKey) {
 	return 0;
 }
 
+// download beatmap from official server to file by using sid
+int DL::OfficialDownload(string fileName, UINT64 sid, string taskKey) {
+	string downloadApiUrl;
+	switch (ppyDownloadType) {
+	case FULL:
+		downloadApiUrl = "https://osu.ppy.sh/beatmapsets/" + to_string(sid) + "/download";
+		break;
+	case NOVIDEO:
+	default:
+		downloadApiUrl = "https://osu.ppy.sh/beatmapsets/" + to_string(sid) + "/download?noVideo=1";
+		break;
+	}
+	//check cookie
+	if (!strlen(osuAuth::cookie)) {
+		MessageBoxA(0, "To download from osu.ppy.sh, \nyou need login in download settings.", "Ingame downloader", 0);
+		return 1;
+	}
+	MyProgress* myp = new MyProgress();
+	myp->taskKey = taskKey;
+	auto res = DL::CurlDownload(downloadApiUrl, fileName, myp, osuAuth::cookie);
+	if (res == CURL_LAST) {
+		logger::WriteLogFormat("[-] OfficialDownload: Cookie expired");
+		MessageBoxA(0, "Cookie expired, please login again or update your cookie.", "Ingame downloader", 0);
+		delete myp;
+		return 2;
+	}
+	else if (res) {
+		logger::WriteLogFormat("[-] OfficialDownload: err while downloading, %s", curl_easy_strerror(res));
+		delete myp;
+		return 3;
+	}
+	delete myp;
+	return 0;
+}
+
+int DL::Download(string fileName, UINT64 sid, string taskKey) {
+	logger::WriteLogFormat("[*] downloading sid %llu", sid);
+	if (serverId == SAYOBOT) {
+		return SayobotDownload(fileName, sid, taskKey);
+	}
+	else if (serverId == OFFICIAL) {
+		return OfficialDownload(fileName, sid, taskKey);
+	}
+	return 1;
+}
+
 int DL::ManualDownload(string id, int idType) {
+	if (id.empty()) {
+		return 0;
+	}
 	string url = idType == 0 ? "https://osu.ppy.sh/s/" + id : "https://osu.ppy.sh/b/" + id;
 	LPCWSTR w_url = char2wchar(url.c_str());
 	ShellExecute(0, 0, w_url, 0, 0, SW_HIDE);
@@ -234,12 +323,18 @@ int DL::ManualDownload(string id, int idType) {
 
 int DL::RemoveTaskInfo(string url) {
 	SetTaskWriteLock();
-	auto keyIter = tasks.find(url);
-	if (keyIter != tasks.end()) {
-		tasks.erase(keyIter);
-	}
+	tasks.erase(url);
 	UnsetTaskLock();
 	return 0;
+}
+#include <time.h>
+
+void DL::StopAllTask() {
+	SetTaskWriteLock();
+	Sleep(1);
+	tasks.clear();
+	Sleep(2);
+	UnsetTaskLock();
 }
 
 void DL::SetTaskReadLock() {

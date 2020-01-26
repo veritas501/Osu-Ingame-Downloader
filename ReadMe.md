@@ -4,6 +4,12 @@
 
 铺面镜像使用[Sayobot]( https://osu.sayobot.cn/)，感谢Sayobot提供如此优质的服务。
 
+## 界面
+
+<img src="Assets/downloading.png" alt="settings" style="display:inline" />
+
+<img src="Assets/settings.png" alt="settings" style="zoom:70%;display:inline" />
+
 ## 使用说明
 
 本下载器的实现方式和steam中`shift+tab`的overlay以及OsuSync中的[IngameOverlay](https://github.com/OsuSync/IngameOverlay) 是一样的。

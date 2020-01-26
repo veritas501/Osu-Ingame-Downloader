@@ -128,6 +128,7 @@ void OV::RenderOverlay(HDC hdc) {
 
 	//===================== MY UI START =====================
 
+	// status window
 	if (showStatus || showSetting) {
 		ImGuiWindowFlags statusWindowFlag = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
 		if (!statusPinned) {
@@ -194,6 +195,7 @@ void OV::RenderOverlay(HDC hdc) {
 		DL::UnsetTaskLock();
 	}
 
+	// setting window
 	if (showSetting) {
 		ImGui::Begin(SETTING_WINDOW_NAME, nullptr, ImVec2(0, 0), -1, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize);
 		// basic info
@@ -303,6 +305,17 @@ void OV::RenderOverlay(HDC hdc) {
 		ImGui::InputTextWithHint("##input_song_id", "song id", DL::manualDlId, IM_ARRAYSIZE(DL::manualDlId)); ImGui::SameLine();
 		if (ImGui::Button("Download")) {
 			DL::ManualDownload(DL::manualDlId, DL::manualDlType);
+		}
+		ImGui::Separator();
+		if (ImGui::ButtonEx("Stop All Task", ImVec2(-1, 40))) {
+			HANDLE EndTaskThread = reinterpret_cast<HANDLE>(_beginthreadex(0, 0,
+				[](void* pData) -> unsigned int {
+					DL::StopAllTask();
+					return 0;
+				}, NULL, 0, NULL));
+			if (EndTaskThread) {
+				CloseHandle(EndTaskThread);
+			}
 		}
 		ImGui::End();
 	}

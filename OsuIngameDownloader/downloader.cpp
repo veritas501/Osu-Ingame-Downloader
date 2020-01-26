@@ -26,7 +26,7 @@ char DL::proxyServer[0x50] = "";
 int xferinfoCB(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
 	MyProgress* myp = (struct MyProgress*)clientp;
 	DL::SetTaskReadLock();
-	if (DL::tasks.count(myp->taskKey) < 0) {
+	if (DL::tasks.count(myp->taskKey) <= 0) {
 		DL::UnsetTaskLock();
 		return 1;
 	}
@@ -34,7 +34,12 @@ int xferinfoCB(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t u
 	DL::SetTaskWriteLock();
 	DL::tasks[myp->taskKey].fileSize = (double)dltotal;
 	DL::tasks[myp->taskKey].downloaded = (double)dlnow;
-	DL::tasks[myp->taskKey].percent = (float)((double)dlnow / (double)dltotal);
+	if (!dltotal && !dlnow) {
+		DL::tasks[myp->taskKey].percent = 0;
+	}
+	else {
+		DL::tasks[myp->taskKey].percent = (float)((double)dlnow / (double)dltotal);
+	}
 	DL::UnsetTaskLock();
 	return 0;
 }
@@ -280,13 +285,13 @@ int DL::OfficialDownload(string fileName, UINT64 sid, string taskKey) {
 	myp->taskKey = taskKey;
 	auto res = DL::CurlDownload(downloadApiUrl, fileName, myp, osuAuth::cookie);
 	if (res == CURL_LAST) {
-		printf("[-] OfficialDownload: Cookie expired");
+		logger::WriteLogFormat("[-] OfficialDownload: Cookie expired");
 		MessageBoxA(0, "Cookie expired, please login again or update your cookie.", "Ingame downloader", 0);
 		delete myp;
 		return 2;
 	}
 	else if (res) {
-		printf("[-] OfficialDownload: err while downloading, %s", curl_easy_strerror(res));
+		logger::WriteLogFormat("[-] OfficialDownload: err while downloading, %s", curl_easy_strerror(res));
 		delete myp;
 		return 3;
 	}
@@ -318,12 +323,18 @@ int DL::ManualDownload(string id, int idType) {
 
 int DL::RemoveTaskInfo(string url) {
 	SetTaskWriteLock();
-	auto keyIter = tasks.find(url);
-	if (keyIter != tasks.end()) {
-		tasks.erase(keyIter);
-	}
+	tasks.erase(url);
 	UnsetTaskLock();
 	return 0;
+}
+#include <time.h>
+
+void DL::StopAllTask() {
+	SetTaskWriteLock();
+	Sleep(1);
+	tasks.clear();
+	Sleep(2);
+	UnsetTaskLock();
 }
 
 void DL::SetTaskReadLock() {

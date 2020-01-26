@@ -91,7 +91,7 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	DL::UnsetTaskLock();
 	// parse sid, song name and category
 	res = DL::ParseInfo(url, sid, songName, category);
-	if (res) {
+	if (res || DL::tasks.count(url) <= 0) {
 		CallOriShellExecuteExW(url);
 		goto finish;
 	}
@@ -117,8 +117,12 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 		CallOriShellExecuteExW(url);
 		goto finish;
 	}
+
 	// open map
 	ShellExecuteA(0, NULL, fileName.c_str(), NULL, NULL, SW_HIDE);
+	//MessageBoxA(0, fileName.c_str(),"",0);
+	//puts(fileName.c_str());
+
 	// insert map into database
 	DB::insertSid(sid);
 finish:

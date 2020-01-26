@@ -74,4 +74,5 @@ namespace DL {
 	void SetTaskReadLock();
 	void SetTaskWriteLock();
 	void UnsetTaskLock();
+	void StopAllTask();
 };

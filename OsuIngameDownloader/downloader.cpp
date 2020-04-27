@@ -45,15 +45,14 @@ int xferinfoCB(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t u
 }
 
 // GET requests, return string
-CURLcode DL::CurlGetReq(const string url, string& response, const string cookie) {
+CURLcode DL::CurlGetReq(const string url, string& response, const vector<string> extendHeader) {
 	CURL* curl = curl_easy_init();
 	CURLcode res = CURL_LAST;
 	if (curl) {
 		struct curl_slist* header_list = NULL;
-		header_list = curl_slist_append(header_list, "User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
-		if (!cookie.empty()) {
-			string tmpCookie = "cookie: " + cookie;
-			header_list = curl_slist_append(header_list, tmpCookie.c_str());
+		header_list = curl_slist_append(header_list, "User-Agent: Osu! Ingame Downloder");
+		for (int i = 0; i < extendHeader.size(); i++) {
+			header_list = curl_slist_append(header_list, extendHeader[i].c_str());
 		}
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header_list);
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
@@ -83,16 +82,15 @@ CURLcode DL::CurlGetReq(const string url, string& response, const string cookie)
 }
 
 // GET requests, write output to file
-CURLcode DL::CurlDownload(const string url, const string fileName, MyProgress* prog, const string cookie) {
+CURLcode DL::CurlDownload(const string url, const string fileName, MyProgress* prog, const vector<string> extendHeader) {
 	CURL* curl = curl_easy_init();
 	CURLcode res = CURL_LAST;
 	FILE* fp;
 	if (curl) {
 		struct curl_slist* header_list = NULL;
-		header_list = curl_slist_append(header_list, "User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
-		if (!cookie.empty()) {
-			string tmpCookie = "cookie: "+ cookie;
-			header_list = curl_slist_append(header_list, tmpCookie.c_str());
+		header_list = curl_slist_append(header_list, "User-Agent: Osu! Ingame Downloder");
+		for (int i = 0; i < extendHeader.size(); i++) {
+			header_list = curl_slist_append(header_list, extendHeader[i].c_str());
 		}
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header_list);
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
@@ -283,7 +281,10 @@ int DL::OfficialDownload(string fileName, UINT64 sid, string taskKey) {
 	}
 	MyProgress* myp = new MyProgress();
 	myp->taskKey = taskKey;
-	auto res = DL::CurlDownload(downloadApiUrl, fileName, myp, osuAuth::cookie);
+	vector<string> extHeader;
+	extHeader.push_back(string("referer: https://osu.ppy.sh/s/")+to_string(sid));
+	extHeader.push_back(string("cookie: ") + osuAuth::cookie);
+	auto res = DL::CurlDownload(downloadApiUrl, fileName, myp, extHeader);
 	if (res == CURL_LAST) {
 		logger::WriteLogFormat("[-] OfficialDownload: Cookie expired");
 		MessageBoxA(0, "Cookie expired, please login again or update your cookie.", "Ingame downloader", 0);

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <curl/curl.h>
 #include <map>
+#include <vector>
 #include "rw_lock.h"
 using namespace std;
 
@@ -61,8 +62,8 @@ namespace DL {
 	extern bool useProxy;
 	extern char proxyServer[0x50];
 
-	CURLcode CurlGetReq(const string url, string& response, const string cookie = "");
-	CURLcode CurlDownload(const string url, const string fileName, MyProgress* prog, const string cookie = "");
+	CURLcode CurlGetReq(const string url, string& response, const vector<string> extendHeader = vector<string>());
+	CURLcode CurlDownload(const string url, const string fileName, MyProgress* prog, const vector<string> extendHeader = vector<string>());
 	int SayobotParseInfo(string url, UINT64& sid, string& songName, int& approved);
 	int OfficialParseInfo(string url, UINT64& sid, string& songName, int& category);
 	int ParseInfo(string url, UINT64& sid, string& songName, int& category);

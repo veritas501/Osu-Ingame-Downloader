@@ -61,6 +61,7 @@ PS：作为参考，使用OsuSync的IngameOverlay不会被Ban， https://osu.ppy
 ## 演示视频
 
 视频中使用版本较老，具体功能以当前版本为准。
+PS:如果动图加载不出来也可以看这个视频：https://www.bilibili.com/video/BV11J411z7cS
 
 ![](Assets/demo.gif)
 

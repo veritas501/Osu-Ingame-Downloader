@@ -12,6 +12,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>LoaderXinput14</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>Loader</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -33,7 +34,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>xinput1_4</TargetName>
+    <TargetName>loader</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -56,12 +57,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="dllhijack.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="hijack_xinput1_4.h" />
     <ClInclude Include="loader.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="dllhijack.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="loader.cpp" />
     <ClCompile Include="pch.cpp">

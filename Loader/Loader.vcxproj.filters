@@ -21,10 +21,10 @@
     <ClInclude Include="pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="hijack_xinput1_4.h">
+    <ClInclude Include="loader.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="loader.h">
+    <ClInclude Include="dllhijack.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -36,6 +36,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="loader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="dllhijack.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

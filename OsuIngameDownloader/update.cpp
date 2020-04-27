@@ -36,7 +36,7 @@ void Update::CheckUpdateService() {
 	}
 }
 
-bool Update::CheckUpdate(string& cnblogMirrorUrl, string& githubReleaseUrl) {
+bool Update::CheckUpdate(string& SayoMirrorUrl, string& githubReleaseUrl) {
 	string content;
 	Document jContent;
 	string tagName;
@@ -76,7 +76,7 @@ bool Update::CheckUpdate(string& cnblogMirrorUrl, string& githubReleaseUrl) {
 					return false;
 				}
 				githubReleaseUrl = assets["browser_download_url"].GetString();
-				cnblogMirrorUrl = "https://files.cnblogs.com/files/veritas501/IngameDL_" + tagName + ".gz";
+				SayoMirrorUrl = "https://osu.sayobot.cn/tools/IngameDL.dll";
 				return true;
 			}
 		}

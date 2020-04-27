@@ -1,21 +1,19 @@
 #pragma once
 #include <iostream>
-#include <vector>
+#include <set>
 #include <Windows.h>
 #include "rw_lock.h"
 using namespace std;
 
+#define fsRead(fs,obj) fs.read((char*)&obj,sizeof(obj));
+#define fsPass(fs,size) fs.seekg(size,std::ios::cur);
+
 namespace DB {
-	extern vector<UINT64> sidDatabase;
+	extern set<UINT64> sidDB;
+	extern set<UINT64> bidDB;
 	extern LK databaseLock;
 
-	void topDirSearch(string path);
-	void findSingleMap(string path);
-	int ParseMapSid(string fileName);
-	string GetSuffix(string fileName);
-
-	void InitDataBase(string songDir);
-	bool sidExist(UINT64 sid);
+	void InitDataBase(string osuDB);
+	bool mapExist(string url);
 	void insertSid(UINT64 sid);
-
 };

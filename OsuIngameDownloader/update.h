@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 #include <vector>
-#define VERSION "0.9.3"
+#define VERSION "0.9.4"
 
 using namespace std;
 

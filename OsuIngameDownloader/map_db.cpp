@@ -4,98 +4,142 @@
 #include <sstream>
 #include <algorithm>
 #include <ctime>
+#include <regex>
+#include <vector>
 #include <io.h>
 
-vector<UINT64> DB::sidDatabase;
+set<UINT64> DB::sidDB;
+set<UINT64> DB::bidDB;
 LK DB::databaseLock;
 
-
-string DB::GetSuffix(string fileName) {
-	auto off = fileName.find_last_of('.');
-	if (off == -1) {
-		return "";
+unsigned int UnpackULEB128(ifstream& fs) {
+	char flag = 0;
+	fsRead(fs, flag);
+	if (flag != 0xb) {
+		return 0;
 	}
-	return fileName.substr(off);
+	unsigned char tmpByte = 0;
+	unsigned int decodeNum = 0;
+	int i = 0;
+	do {
+		fsRead(fs, tmpByte);
+		decodeNum += (tmpByte & 0x7f) << (7 * i);
+		i++;
+	} while (tmpByte >= 0x80);
+	return decodeNum;
 }
 
-int DB::ParseMapSid(string fileName) {
-	ifstream ifs(fileName);
-	if (!ifs.is_open()) {
-		return 1;
+string UnpackOsuStr(ifstream& fs) {
+	int size = UnpackULEB128(fs);
+	if (!size) {
+		return string("");
 	}
-	ostringstream oss;
-	oss << ifs.rdbuf();
-	string content = oss.str();
-	size_t off = content.find("BeatmapSetID:");
-	if (off == -1)
-	{
-		return 1;
-	}
-	auto off2 = content.find_first_of("\n", off);
-	string sidString = content.substr(off + 13, off2 - (off + 13));
-	UINT64 sid = atoll(sidString.c_str());
-	if (sid != -1) {
-		sidDatabase.push_back(sid);
-	}
-	return 0;
+	char* tmpStr = new char[size + 1];
+	fs.read(tmpStr, size);
+	tmpStr[size] = 0;
+
+	string ans(tmpStr);
+	delete[] tmpStr;
+	return ans;
 }
 
-void DB::findSingleMap(string path) {
-	long hFile = 0;
-	struct _finddata_t fileInfo;
-	string pathName, exdName;
-
-	if ((hFile = _findfirst(pathName.assign(path).
-		append("\\*").c_str(), &fileInfo)) == -1) {
+void PassOsuStr(ifstream& fs) {
+	int size = UnpackULEB128(fs);
+	if (!size) {
 		return;
 	}
-	do {
-		if (!(fileInfo.attrib & _A_SUBDIR) && GetSuffix(fileInfo.name) == ".osu") {
-			if (!ParseMapSid(path + "\\" + fileInfo.name)) {
-				//find, skip other map
-				break;
+	fsPass(fs, size);
+}
+
+void ParseOsuDB(string dbName) {
+	ifstream ifs;
+	int bid, sid;
+
+	ifs.open(dbName, ios::binary | ios::in);
+	fsPass(ifs, 0x11);
+	PassOsuStr(ifs);
+	int sumBeatmaps;
+	fsRead(ifs, sumBeatmaps);
+	for (int i = 0; i < sumBeatmaps; i++) {
+		for (int j = 0; j < 9; j++) {
+			PassOsuStr(ifs);
+		}
+		fsPass(ifs, 1 + 2 * 3 + 8 + 4 * 4 + 8);
+		for (int j = 0; j < 4; j++) {
+			int length = 0;
+			fsRead(ifs, length);
+			for (int k = 0; k < length; k++) {
+				fsPass(ifs, 1 + 4 + 1 + 8);
 			}
-
 		}
-	} while (_findnext(hFile, &fileInfo) == 0);
-	_findclose(hFile);
-	return;
-}
-
-void DB::topDirSearch(string path)
-{
-	long hFile = 0;
-	struct _finddata_t fileInfo;
-	string pathName;
-
-	if ((hFile = _findfirst(pathName.assign(path).
-		append("\\*").c_str(), &fileInfo)) == -1) {
-		return;
+		fsPass(ifs, 4 * 3);
+		int timingPointsLength;
+		fsRead(ifs, timingPointsLength);
+		for (int j = 0; j < timingPointsLength; j++) {
+			fsPass(ifs, 8 * 2 + 1);
+		}
+		fsRead(ifs, bid);
+		fsRead(ifs, sid);
+		fsPass(ifs, 4 + 1 * 4 + 2 + 4 + 1);
+		PassOsuStr(ifs);
+		PassOsuStr(ifs);
+		fsPass(ifs, 2);
+		PassOsuStr(ifs);
+		fsPass(ifs, 1 + 8 + 1);
+		PassOsuStr(ifs);
+		fsPass(ifs, 8 + 1 * 5 + 4 + 1);
+		if (bid != -1 && bid != 0) {
+			DB::bidDB.insert(bid);
+		}
+		if (sid != -1 && sid != 0) {
+			DB::sidDB.insert(sid);
+		}
 	}
-	do {
-		if (fileInfo.attrib & _A_SUBDIR && strcmp(fileInfo.name, ".") && strcmp(fileInfo.name, "..")) {
-			findSingleMap(path + "\\" + fileInfo.name);
-		}
-	} while (_findnext(hFile, &fileInfo) == 0);
-	_findclose(hFile);
-	return;
 }
 
-void DB::InitDataBase(string songDir) {
+void DB::InitDataBase(string osuDB) {
 	auto oldClock = clock();
 	databaseLock.WriteLock();
-	topDirSearch(songDir);
+	ParseOsuDB(osuDB);
 	databaseLock.Unlock();
 	auto newClock = clock();
-	logger::WriteLogFormat("[*] init sid database in %dms", newClock - oldClock);
+	logger::WriteLogFormat("[*] init sid and bid database in %dms", newClock - oldClock);
 }
 
-bool DB::sidExist(UINT64 sid) {
+bool DB::mapExist(string url) {
 	databaseLock.ReadLock();
-	auto iter = find(sidDatabase.begin(), sidDatabase.end(), sid);
-	if (iter != sidDatabase.end()) {
-		databaseLock.Unlock();
-		return true;
+	vector<regex> e;
+	e.push_back(regex("osu\.ppy\.sh/b/(\\d{1,})"));
+	e.push_back(regex("osu\.ppy\.sh/s/(\\d{1,})"));
+	e.push_back(regex("osu\.ppy\.sh/beatmapsets/(\\d{1,})"));
+	smatch m;
+	bool found = false;
+	int sid = 0, bid = 0;
+	for (int i = 0; i < 3; i++) {
+		found = regex_search(url, m, e[i]);
+		if (found) {
+			if (i == 0) {
+				bid = atoi(m.str(1).c_str());
+			}
+			else {
+				sid = atoi(m.str(1).c_str());
+			}
+			break;
+		}
+	}
+	if (bid != 0) {
+		auto iter = bidDB.find(bid);
+		if (iter != bidDB.end()) {
+			databaseLock.Unlock();
+			return true;
+		}
+	}
+	if (sid != 0) {
+		auto iter = sidDB.find(sid);
+		if (iter != sidDB.end()) {
+			databaseLock.Unlock();
+			return true;
+		}
 	}
 	databaseLock.Unlock();
 	return false;
@@ -103,6 +147,6 @@ bool DB::sidExist(UINT64 sid) {
 
 void DB::insertSid(UINT64 sid) {
 	databaseLock.WriteLock();
-	sidDatabase.push_back(sid);
+	sidDB.insert(sid);
 	databaseLock.Unlock();
 }

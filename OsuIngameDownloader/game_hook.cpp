@@ -28,7 +28,7 @@ BOOL __stdcall InitPlugin(HDC hdc) {
 	// init sid database;
 	HANDLE InitDatabaseThread = reinterpret_cast<HANDLE>(_beginthreadex(0, 0,
 		[](void* pData) -> unsigned int {
-			DB::InitDataBase("Songs");
+			DB::InitDataBase("osu!.db");
 			return 0;
 		}, NULL, 0, NULL));
 	if (InitDatabaseThread) {
@@ -84,6 +84,11 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 		return 0;
 	}
 	DL::UnsetTaskLock();
+	// user already has this map
+	if (DB::mapExist(url)) {
+		CallOriShellExecuteExW(url);
+		goto finish;
+	}
 	OV::ShowStatus();
 	DL::SetTaskWriteLock();
 	DL::tasks[url].dlStatus = PARSE;
@@ -92,12 +97,6 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	// parse sid, song name and category
 	res = DL::ParseInfo(url, sid, songName, category);
 	if (res || DL::tasks.count(url) <= 0) {
-		CallOriShellExecuteExW(url);
-		goto finish;
-	}
-	// user already has this map
-	if (DB::sidExist(sid)) {
-		logger::WriteLogFormat("[*] user already has sid %llu, skip", sid);
 		CallOriShellExecuteExW(url);
 		goto finish;
 	}

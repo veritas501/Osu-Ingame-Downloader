@@ -36,7 +36,7 @@ void Update::CheckUpdateService() {
 	}
 }
 
-bool Update::CheckUpdate(string& SayoMirrorUrl, string& githubReleaseUrl) {
+bool Update::CheckUpdate(string& giteeUrl, string& githubReleaseUrl) {
 	string content;
 	Document jContent;
 	string tagName;
@@ -76,7 +76,7 @@ bool Update::CheckUpdate(string& SayoMirrorUrl, string& githubReleaseUrl) {
 					return false;
 				}
 				githubReleaseUrl = assets["browser_download_url"].GetString();
-				SayoMirrorUrl = "https://osu.sayobot.cn/tools/IngameDL.dll";
+				giteeUrl = string("https://gitee.com/hxzene/Osu-Ingame-Downloader-build/raw/master/").append(VERSION).append("//IngameDL.dll");
 				return true;
 			}
 		}

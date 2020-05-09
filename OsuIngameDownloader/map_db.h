@@ -14,6 +14,7 @@ namespace DB {
 	extern LK databaseLock;
 
 	void InitDataBase(string osuDB);
-	bool mapExist(string url);
+	bool mapExistFast(string url);
+	bool mapExist(UINT64 sid);
 	void insertSid(UINT64 sid);
 };

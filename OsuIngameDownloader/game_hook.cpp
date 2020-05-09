@@ -85,7 +85,7 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	}
 	DL::UnsetTaskLock();
 	// user already has this map
-	if (DB::mapExist(url)) {
+	if (DB::mapExistFast(url)) {
 		CallOriShellExecuteExW(url);
 		goto finish;
 	}
@@ -96,7 +96,7 @@ DWORD WINAPI DownloadThread(LPVOID lpParam) {
 	DL::UnsetTaskLock();
 	// parse sid, song name and category
 	res = DL::ParseInfo(url, sid, songName, category);
-	if (res || DL::tasks.count(url) <= 0) {
+	if (res || DL::tasks.count(url) <= 0 || DB::mapExist(sid)) {
 		CallOriShellExecuteExW(url);
 		goto finish;
 	}

@@ -106,7 +106,7 @@ void DB::InitDataBase(string osuDB) {
 	logger::WriteLogFormat("[*] init sid and bid database in %dms", newClock - oldClock);
 }
 
-bool DB::mapExist(string url) {
+bool DB::mapExistFast(string url) {
 	databaseLock.ReadLock();
 	vector<regex> e;
 	e.push_back(regex("osu\.ppy\.sh/b/(\\d{1,})"));
@@ -144,6 +144,18 @@ bool DB::mapExist(string url) {
 	databaseLock.Unlock();
 	return false;
 }
+
+bool DB::mapExist(UINT64 sid) {
+	databaseLock.ReadLock();
+	auto iter = sidDB.find(sid);
+	if (iter != sidDB.end()) {
+		databaseLock.Unlock();
+		return true;
+	}
+	databaseLock.Unlock();
+	return false;
+}
+
 
 void DB::insertSid(UINT64 sid) {
 	databaseLock.WriteLock();

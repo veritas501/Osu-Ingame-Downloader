@@ -76,7 +76,7 @@ bool Update::CheckUpdate(string& giteeUrl, string& githubReleaseUrl) {
 					return false;
 				}
 				githubReleaseUrl = assets["browser_download_url"].GetString();
-				giteeUrl = string("https://gitee.com/hxzene/Osu-Ingame-Downloader-build/raw/master/").append(VERSION).append("//IngameDL.dll");
+				giteeUrl = string("https://gitee.com/hxzene/Osu-Ingame-Downloader-build/raw/master/").append(tagName).append("/IngameDL.dll");
 				return true;
 			}
 		}

@@ -39,6 +39,7 @@ bool osuAuth::login(string& errorDetail) {
 	}
 	string postUrl = "https://osu.ppy.sh/session";
 	string tokenHeader = "x-csrf-token: " + token;
+	string referer = "referer: https://osu.ppy.sh";
 	string postData = "_token=" + token + "&username=" + username + "&password=" + password;
 	string header = "";
 	string content = "";
@@ -48,6 +49,7 @@ bool osuAuth::login(string& errorDetail) {
 		struct curl_slist* header_list = NULL;
 		header_list = curl_slist_append(header_list, "User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
 		header_list = curl_slist_append(header_list, tokenHeader.c_str());
+		header_list = curl_slist_append(header_list, referer.c_str());
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header_list);
 		curl_easy_setopt(curl, CURLOPT_URL, postUrl.c_str());
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData.c_str());
